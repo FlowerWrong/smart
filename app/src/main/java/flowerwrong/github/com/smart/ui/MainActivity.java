@@ -3,6 +3,7 @@ package flowerwrong.github.com.smart.ui;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
@@ -11,6 +12,9 @@ import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.util.Log;
@@ -29,12 +33,22 @@ import android.widget.Toast;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
+
+import org.apache.commons.io.IOUtils;
+
 import flowerwrong.github.com.smart.R;
 import flowerwrong.github.com.smart.core.AppInfo;
 import flowerwrong.github.com.smart.core.AppProxyManager;
 import flowerwrong.github.com.smart.core.LocalVpnService;
 import flowerwrong.github.com.smart.core.ProxyConfig;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Calendar;
 import java.util.Collections;
 
@@ -56,6 +70,9 @@ public class MainActivity extends Activity implements
     private ScrollView scrollViewLog;
     private TextView textViewProxyUrl, textViewProxyApp;
     private Calendar mCalendar;
+
+    private Handler handler;
+    private String MSG_KEY = "LOG_MSG";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,7 +96,17 @@ public class MainActivity extends Activity implements
         scrollViewLog.fullScroll(ScrollView.FOCUS_DOWN);
 
         mCalendar = Calendar.getInstance();
+
         LocalVpnService.addOnStatusChangedListener(this);
+        LocalVpnService.context = this;
+
+        handler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                Bundle bundle = msg.getData();
+                onLogReceived(bundle.getString(MSG_KEY));
+            }
+        };
 
         // Pre-App Proxy
         if (AppProxyManager.isLollipopOrAbove) {
@@ -375,6 +402,9 @@ public class MainActivity extends Activity implements
             case R.id.menu_item_clear_log:
                 textViewLog.setText("");
                 return true;
+            case R.id.menu_item_update_config:
+                checkConfigFile(true);
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -400,4 +430,77 @@ public class MainActivity extends Activity implements
         super.onDestroy();
     }
 
+    private void checkConfigFile(final boolean updateFlag) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                FileInputStream fis = null;
+                FileOutputStream fos = null;
+                InputStream in = null;
+                try {
+                    fis = openFileInput(LocalVpnService.configFile);
+
+                    if (updateFlag) {
+                        downloadConfigFile(fos, in, fis);
+                    }
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    downloadConfigFile(fos, in, fis);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    sendHandlerMsg("Load config file failed: " + e.getLocalizedMessage());
+                } finally {
+                    if (fis != null) {
+                        try {
+                            fis.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    if (fos != null) {
+                        try {
+                            fos.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    if (in != null) {
+                        try {
+                            in.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }).start();
+    }
+
+    private void downloadConfigFile(FileOutputStream fos, InputStream in, FileInputStream fis) {
+        try {
+            fos = openFileOutput(LocalVpnService.configFile, Context.MODE_PRIVATE);
+            URL u = new URL(LocalVpnService.remoteConfigFile);
+            in = u.openStream();
+            IOUtils.copy(in, fos);
+            sendHandlerMsg("Download config file from remote success");
+        } catch (FileNotFoundException e1) {
+            e1.printStackTrace();
+        } catch (MalformedURLException e1) {
+            e1.printStackTrace();
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    private void sendHandlerMsg(String data) {
+        Message msg = handler.obtainMessage();
+        Bundle bundle = new Bundle();
+        bundle.putString(MSG_KEY, data);
+        msg.setData(bundle);
+        handler.sendMessage(msg);
+    }
 }

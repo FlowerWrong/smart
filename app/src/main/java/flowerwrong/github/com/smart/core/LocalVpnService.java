@@ -1,6 +1,7 @@
 package flowerwrong.github.com.smart.core;
 
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -44,6 +45,10 @@ public class LocalVpnService extends VpnService implements Runnable {
     public static String ProxyUrl;
     public static boolean IsRunning = false;
     public static DatabaseReader maxmindReader;
+
+    public static Context context;
+    public static String configFile = "smart-config.txt";
+    public static String remoteConfigFile = "https://gist.githubusercontent.com/FlowerWrong/bccee4d63a6f0542523074f2ae184094/raw/dbc48ed2a7db2262d8f4d77ba0851cd5207d286b/smart-config.txt";
 
     private static int ID;
     private static int LOCAL_IP;
@@ -175,8 +180,9 @@ public class LocalVpnService extends VpnService implements Runnable {
             waitUntilPreapred(); // 检查是否准备完毕
 
             try {
-                ProxyConfig.Instance.loadFromFile(getResources().openRawResource(R.raw.config));
-                writeLog("Load config from file done");
+                FileInputStream fis = context.openFileInput(LocalVpnService.configFile);
+                int ruleCount = ProxyConfig.Instance.loadFromFile(fis);
+                writeLog("Load config from file done " + ruleCount);
             } catch (Exception e) {
                 String errString = e.getMessage();
                 if (errString == null || errString.isEmpty()) {

@@ -114,7 +114,7 @@ public class ProxyConfig {
     TimerTask m_Task = new TimerTask() {
         @Override
         public void run() {
-            refreshProxyServer();//定时更新dns缓存
+            refreshProxyServer(); // 定时更新dns缓存
         }
 
         // 定时更新dns缓存
@@ -128,10 +128,11 @@ public class ProxyConfig {
                             config.ServerAddress = new InetSocketAddress(address, config.ServerAddress.getPort());
                         }
                     } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
             } catch (Exception e) {
-
+                e.printStackTrace();
             }
         }
     };
@@ -324,10 +325,10 @@ public class ProxyConfig {
         }
     }
 
-    public void loadFromFile(InputStream inputStream) throws Exception {
+    public int loadFromFile(InputStream inputStream) throws Exception {
         byte[] bytes = new byte[inputStream.available()];
         inputStream.read(bytes);
-        loadFromLines(new String(bytes).split("\\r?\\n"));
+        return loadFromLines(new String(bytes).split("\\r?\\n"));
     }
 
     public void loadFromUrl(String url) throws Exception {
@@ -340,7 +341,7 @@ public class ProxyConfig {
         loadFromLines(lines);
     }
 
-    protected void loadFromLines(String[] lines) throws Exception {
+    protected int loadFromLines(String[] lines) throws Exception {
         m_IpList.clear();
         m_DnsList.clear();
         m_RouteList.clear();
@@ -425,10 +426,12 @@ public class ProxyConfig {
 
         }
 
-        //查找默认代理。
+        // 查找默认代理。
         if (m_ProxyList.size() == 0) {
             tryAddProxy(lines);
         }
+
+        return m_DomainMap.size() + m_DomainSuffixMap.size() + m_DomainKeywordMap.size() + m_IPCountryMap.size() + m_IPCidrMap.size();
     }
 
     private void tryAddProxy(String[] lines) {

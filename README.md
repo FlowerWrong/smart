@@ -5,4 +5,4 @@ Tribute to [SmartProxy](https://github.com/oldman1977/SmartProxy).
 
 #### Config
 
-[default config file](https://github.com/FlowerWrong/smart/blob/master/app/src/main/res/raw/config)
+[default config file](https://gist.github.com/FlowerWrong/bccee4d63a6f0542523074f2ae184094)

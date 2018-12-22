@@ -18,6 +18,10 @@
         android:title="@string/menu_item_clear_log"></item>
 
     <item
+        android:id="@+id/menu_item_update_config"
+        android:title="@string/menu_item_update_config"></item>
+
+    <item
         android:id="@+id/menu_item_about"
         android:title="@string/menu_item_about"></item>
     <item
