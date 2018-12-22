@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.os.ParcelFileDescriptor;
 
 import com.maxmind.geoip2.DatabaseReader;
+import com.maxmind.geoip2.exception.AddressNotFoundException;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CountryResponse;
 import com.maxmind.geoip2.record.Country;
@@ -271,6 +272,7 @@ public class LocalVpnService extends VpnService implements Runnable {
             case IPHeader.TCP:
                 TCPHeader tcpHeader = m_TCPHeader;
                 tcpHeader.m_Offset = ipHeader.getHeaderLength();
+
                 if (ipHeader.getSourceIP() == LOCAL_IP) {
                     if (tcpHeader.getSourcePort() == m_TcpProxyServer.Port) { // 收到本地TCP服务器数据
                         NatSession session = NatSessionManager.getSession(tcpHeader.getDestinationPort());
@@ -373,7 +375,9 @@ public class LocalVpnService extends VpnService implements Runnable {
             if (ProxyConfig.IS_DEBUG)
                 LocalVpnService.Instance.writeLog("addRoute for FAKE_NETWORK: %s/%d\n", CommonMethods.ipIntToString(ProxyConfig.FAKE_NETWORK_IP), 16);
         } else {
+            // 所有的IP包都路由到虚拟端口上去
             builder.addRoute("0.0.0.0", 0);
+            // builder.addRoute("0:0:0:0:0:0:0:0", 0);
             if (ProxyConfig.IS_DEBUG)
                 LocalVpnService.Instance.writeLog("addDefaultRoute: 0.0.0.0/0\n");
         }
@@ -479,7 +483,11 @@ public class LocalVpnService extends VpnService implements Runnable {
             CountryResponse response = maxmindReader.country(ipAddress);
             Country country = response.getCountry();
             return country.getIsoCode();
-        } catch (IOException | GeoIp2Exception e) {
+        } catch (AddressNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (GeoIp2Exception e) {
             e.printStackTrace();
         }
         return null;

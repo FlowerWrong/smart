@@ -29,8 +29,8 @@ public class HttpConnectTunnel extends Tunnel {
         buffer.clear();
         buffer.put(request.getBytes());
         buffer.flip();
-        if (this.write(buffer, true)) {//发送连接请求到代理服务器
-            this.beginReceive();//开始接收代理服务器响应数据
+        if (this.write(buffer, true)) { // 发送连接请求到代理服务器
+            this.beginReceive(); // 开始接收代理服务器响应数据
         }
     }
 
@@ -55,15 +55,15 @@ public class HttpConnectTunnel extends Tunnel {
     @Override
     protected void beforeSend(ByteBuffer buffer) throws Exception {
         if (ProxyConfig.Instance.isIsolateHttpHostHeader()) {
-            trySendPartOfHeader(buffer);//尝试发送请求头的一部分，让请求头的host在第二个包里面发送，从而绕过机房的白名单机制。
+            trySendPartOfHeader(buffer); // 尝试发送请求头的一部分，让请求头的host在第二个包里面发送，从而绕过机房的白名单机制。
         }
     }
 
     @Override
     protected void afterReceived(ByteBuffer buffer) throws Exception {
         if (!m_TunnelEstablished) {
-            //收到代理服务器响应数据
-            //分析响应并判断是否连接成功
+            // 收到代理服务器响应数据
+            // 分析响应并判断是否连接成功
             String response = new String(buffer.array(), buffer.position(), 12);
             if (response.matches("^HTTP/1.[01] 200$")) {
                 buffer.limit(buffer.position());
@@ -85,6 +85,5 @@ public class HttpConnectTunnel extends Tunnel {
     protected void onDispose() {
         m_Config = null;
     }
-
 
 }

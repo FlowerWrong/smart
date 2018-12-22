@@ -145,6 +145,10 @@ public abstract class Tunnel {
             } else if (bytesRead < 0) {
                 this.dispose(); // 连接已关闭，释放资源。
             }
+        } catch (IOException e) {
+            // Connection reset by peer
+            e.printStackTrace();
+            this.dispose();
         } catch (Exception e) {
             e.printStackTrace();
             this.dispose();
@@ -174,24 +178,24 @@ public abstract class Tunnel {
     void disposeInternal(boolean disposeBrother) {
         if (m_Disposed) {
             return;
-        } else {
-            try {
-                m_InnerChannel.close();
-            } catch (Exception e) {
-            }
-
-            if (m_BrotherTunnel != null && disposeBrother) {
-                m_BrotherTunnel.disposeInternal(false); // 把兄弟的资源也释放了。
-            }
-
-            m_InnerChannel = null;
-            m_SendRemainBuffer = null;
-            m_Selector = null;
-            m_BrotherTunnel = null;
-            m_Disposed = true;
-            SessionCount--;
-
-            onDispose();
         }
+
+        try {
+            m_InnerChannel.close();
+        } catch (Exception e) {
+        }
+
+        if (m_BrotherTunnel != null && disposeBrother) {
+            m_BrotherTunnel.disposeInternal(false); // 把兄弟的资源也释放了。
+        }
+
+        m_InnerChannel = null;
+        m_SendRemainBuffer = null;
+        m_Selector = null;
+        m_BrotherTunnel = null;
+        m_Disposed = true;
+        SessionCount--;
+
+        onDispose();
     }
 }

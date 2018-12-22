@@ -178,8 +178,6 @@ class AppViewHolder extends RecyclerView.ViewHolder implements View.OnClickListe
 }
 
 class AppManagerAdapter extends RecyclerView.Adapter<AppViewHolder> implements SectionTitleProvider {
-
-
     @Override
     public AppViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         return new AppViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.layout_apps_item, parent, false));

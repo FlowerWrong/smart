@@ -15,18 +15,16 @@ public class ShadowsocksTunnel extends Tunnel {
         super(config.ServerAddress, selector);
         m_Config = config;
         m_Encryptor = CryptFactory.get(m_Config.EncryptMethod, m_Config.Password);
-
     }
 
     @Override
     protected void onConnected(ByteBuffer buffer) throws Exception {
-
         buffer.clear();
         // https://shadowsocks.org/en/spec/protocol.html
 
-        buffer.put((byte) 0x03);//domain
+        buffer.put((byte) 0x03); // domain
         byte[] domainBytes = m_DestAddress.getHostName().getBytes();
-        buffer.put((byte) domainBytes.length);//domain length;
+        buffer.put((byte) domainBytes.length); // domain length;
         buffer.put(domainBytes);
         buffer.putShort((short) m_DestAddress.getPort());
         buffer.flip();
@@ -53,7 +51,6 @@ public class ShadowsocksTunnel extends Tunnel {
 
     @Override
     protected void beforeSend(ByteBuffer buffer) throws Exception {
-
         byte[] bytes = new byte[buffer.limit()];
         buffer.get(bytes);
 
@@ -69,7 +66,6 @@ public class ShadowsocksTunnel extends Tunnel {
         byte[] bytes = new byte[buffer.limit()];
         buffer.get(bytes);
         byte[] newbytes = m_Encryptor.decrypt(bytes);
-        String s = new String(newbytes);
         buffer.clear();
         buffer.put(newbytes);
         buffer.flip();

@@ -434,7 +434,6 @@ public class MainActivity extends Activity implements
         new Thread(new Runnable() {
             @Override
             public void run() {
-
                 FileInputStream fis = null;
                 FileOutputStream fos = null;
                 InputStream in = null;
