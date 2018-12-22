@@ -18,6 +18,7 @@ import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CountryResponse;
 import com.maxmind.geoip2.record.Country;
 
+import flowerwrong.github.com.smart.net.TcpClientInfo;
 import flowerwrong.github.com.smart.ui.MainActivity;
 import flowerwrong.github.com.smart.R;
 import flowerwrong.github.com.smart.core.ProxyConfig.IPAddress;
@@ -36,6 +37,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,6 +52,8 @@ public class LocalVpnService extends VpnService implements Runnable {
     public static Context context;
     public static String configFile = "smart-config.txt";
     public static String remoteConfigFile = "https://gist.githubusercontent.com/FlowerWrong/bccee4d63a6f0542523074f2ae184094/raw/smart-config.txt";
+
+    public static ArrayList<String> blacklistApp = new ArrayList<>(Arrays.asList("com.android.thememanager", "com.miui.virtualsim", "com.miui.video", "com.miui.player", "com.xiaomi.gamecenter"));
 
     private static int ID;
     private static int LOCAL_IP;
@@ -204,6 +208,8 @@ public class LocalVpnService extends VpnService implements Runnable {
             m_DnsProxy.start();
             writeLog("LocalDnsProxy started.");
 
+            writeLog("Blacklist apps " + String.join(", ", blacklistApp));
+
             while (true) {
                 if (IsRunning) {
                     // 加载配置文件
@@ -273,6 +279,16 @@ public class LocalVpnService extends VpnService implements Runnable {
                 TCPHeader tcpHeader = m_TCPHeader;
                 tcpHeader.m_Offset = ipHeader.getHeaderLength();
 
+                byte[] sourceIp = CommonMethods.ipIntToInet4Address(ipHeader.getSourceIP()).getAddress();
+                byte[] destinationIp = CommonMethods.ipIntToInet4Address(ipHeader.getDestinationIP()).getAddress();
+                Integer uid = TcpClientInfo.getUidForConnection(sourceIp, tcpHeader.getSourcePort(), destinationIp, tcpHeader.getDestinationPort());
+
+                if (uid != null) {
+                    PackageInfo packageInfo = TcpClientInfo.getPackageInfoForUid(LocalVpnService.context, uid);
+                    if (packageInfo != null && blacklistApp.contains(packageInfo.packageName)) {
+                        return;
+                    }
+                }
                 if (ipHeader.getSourceIP() == LOCAL_IP) {
                     if (tcpHeader.getSourcePort() == m_TcpProxyServer.Port) { // 收到本地TCP服务器数据
                         NatSession session = NatSessionManager.getSession(tcpHeader.getDestinationPort());

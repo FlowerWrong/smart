@@ -160,7 +160,7 @@ class AppViewHolder extends RecyclerView.ViewHolder implements View.OnClickListe
         this.item = app;
         proxied = AppProxyManager.Instance.isAppProxy(app.getPkgName());
         icon.setImageDrawable(app.getAppIcon());
-        check.setText(app.getAppLabel());
+        check.setText(app.getAppLabel() + "(" + app.getPkgName() + ")");
         check.setChecked(proxied);
     }
 
