@@ -48,7 +48,7 @@ public class LocalVpnService extends VpnService implements Runnable {
 
     public static Context context;
     public static String configFile = "smart-config.txt";
-    public static String remoteConfigFile = "https://gist.githubusercontent.com/FlowerWrong/bccee4d63a6f0542523074f2ae184094/raw/dbc48ed2a7db2262d8f4d77ba0851cd5207d286b/smart-config.txt";
+    public static String remoteConfigFile = "https://gist.githubusercontent.com/FlowerWrong/bccee4d63a6f0542523074f2ae184094/raw/smart-config.txt";
 
     private static int ID;
     private static int LOCAL_IP;
