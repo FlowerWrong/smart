@@ -21,6 +21,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -46,6 +47,7 @@ public class ProxyConfig {
     HashMap<String, String> m_DomainSuffixMap; // 前缀匹配
     HashMap<String, String> m_IPCountryMap; // ip country
     HashMap<String, String> m_IPCidrMap; // ip cidr
+    HashMap<String, String> m_ProcessMap; // process
 
     public boolean globalMode = false;
 
@@ -106,6 +108,8 @@ public class ProxyConfig {
 
         m_IPCountryMap = new HashMap<String, String>();
         m_IPCidrMap = new HashMap<String, String>();
+
+        m_ProcessMap = new HashMap<String, String>();
 
         m_Timer = new Timer();
         m_Timer.schedule(m_Task, 120000, 120000); // 每两分钟刷新一次。
@@ -238,8 +242,6 @@ public class ProxyConfig {
             String action = getDomainState(host);
 
             if (action != null) {
-                // if (ProxyConfig.IS_DEBUG)
-                //     LocalVpnService.Instance.writeLog("[DOMAIN] " + host + " -> " + ipStr + " -> " + action);
                 return action;
             }
         } else {
@@ -350,6 +352,10 @@ public class ProxyConfig {
         m_DomainKeywordMap.clear();
         m_DomainSuffixMap.clear();
 
+        m_IPCountryMap.clear();
+        m_IPCidrMap.clear();
+        m_ProcessMap.clear();
+
         int lineNumber = 0;
         for (String line : lines) {
             lineNumber++;
@@ -414,6 +420,12 @@ public class ProxyConfig {
                         addIPCidrToHashMap(items, 1, "direct");
                     } else if (tagString.equals("block_ip_cidr")) {
                         addIPCidrToHashMap(items, 1, "block");
+                    } else if (tagString.equals("proxy_process")) {
+                        addProcessToHashMap(items, 1, "proxy");
+                    } else if (tagString.equals("direct_process")) {
+                        addProcessToHashMap(items, 1, "direct");
+                    } else if (tagString.equals("block_process")) {
+                        addProcessToHashMap(items, 1, "block");
                     } else if (tagString.equals("user_agent")) {
                         m_user_agent = line.substring(line.indexOf(" ")).trim();
                     } else if (tagString.equals("isolate_http_host_header")) {
@@ -431,7 +443,7 @@ public class ProxyConfig {
             tryAddProxy(lines);
         }
 
-        return m_DomainMap.size() + m_DomainSuffixMap.size() + m_DomainKeywordMap.size() + m_IPCountryMap.size() + m_IPCidrMap.size();
+        return m_DomainMap.size() + m_DomainSuffixMap.size() + m_DomainKeywordMap.size() + m_IPCountryMap.size() + m_IPCidrMap.size() + m_ProcessMap.size();
     }
 
     private void tryAddProxy(String[] lines) {
@@ -519,6 +531,22 @@ public class ProxyConfig {
             }
             m_IPCidrMap.put(domainString, state);
         }
+    }
+
+    private void addProcessToHashMap(String[] items, int offset, String state) {
+        for (int i = offset; i < items.length; i++) {
+            m_ProcessMap.put(items[i].toLowerCase().trim(), state);
+        }
+    }
+
+    public List<String> getProcessListByAction(String action) {
+        List<String> apps = new ArrayList<>();
+        for (String key : m_ProcessMap.keySet()) {
+            if (m_ProcessMap.get(key).equals(action)) {
+                apps.add(key);
+            }
+        }
+        return apps;
     }
 
     private boolean convertToBool(String valueString) {

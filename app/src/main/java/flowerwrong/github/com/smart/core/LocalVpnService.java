@@ -37,7 +37,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,8 +51,6 @@ public class LocalVpnService extends VpnService implements Runnable {
     public static Context context;
     public static String configFile = "smart-config.txt";
     public static String remoteConfigFile = "https://gist.githubusercontent.com/FlowerWrong/bccee4d63a6f0542523074f2ae184094/raw/smart-config.txt";
-
-    public static ArrayList<String> blacklistApp = new ArrayList<>(Arrays.asList("com.android.thememanager", "com.miui.virtualsim", "com.miui.video", "com.miui.player", "com.xiaomi.gamecenter"));
 
     private static int ID;
     private static int LOCAL_IP;
@@ -208,7 +205,7 @@ public class LocalVpnService extends VpnService implements Runnable {
             m_DnsProxy.start();
             writeLog("LocalDnsProxy started.");
 
-            writeLog("Blacklist apps " + String.join(", ", blacklistApp));
+            writeLog("Blacklist apps " + String.join(", ", ProxyConfig.Instance.getProcessListByAction("block")));
 
             while (true) {
                 if (IsRunning) {
@@ -286,7 +283,7 @@ public class LocalVpnService extends VpnService implements Runnable {
                 uid = TcpUdpClientInfo.getUidForConnection(true, sourceIp, tcpHeader.getSourcePort(), destinationIp, tcpHeader.getDestinationPort());
                 if (uid != null) {
                     PackageInfo packageInfo = TcpUdpClientInfo.getPackageInfoForUid(LocalVpnService.context, uid);
-                    if (packageInfo != null && blacklistApp.contains(packageInfo.packageName)) {
+                    if (packageInfo != null && ProxyConfig.Instance.getProcessListByAction("block").contains(packageInfo.packageName)) {
                         return;
                     }
                 }
@@ -349,7 +346,7 @@ public class LocalVpnService extends VpnService implements Runnable {
                 uid = TcpUdpClientInfo.getUidForConnection(false, sourceIp, udpHeader.getSourcePort(), destinationIp, udpHeader.getDestinationPort());
                 if (uid != null) {
                     PackageInfo packageInfo = TcpUdpClientInfo.getPackageInfoForUid(LocalVpnService.context, uid);
-                    if (packageInfo != null && blacklistApp.contains(packageInfo.packageName)) {
+                    if (packageInfo != null && ProxyConfig.Instance.getProcessListByAction("block").contains(packageInfo.packageName)) {
                         return;
                     }
                 }
@@ -428,15 +425,26 @@ public class LocalVpnService extends VpnService implements Runnable {
         if (AppProxyManager.isLollipopOrAbove) {
             if (AppProxyManager.Instance.proxyAppInfo.size() == 0) {
                 writeLog("Proxy All Apps");
-            }
-            for (AppInfo app : AppProxyManager.Instance.proxyAppInfo) {
-                builder.addAllowedApplication("flowerwrong.github.com.smart"); // 需要把自己加入代理，不然会无法进行网络连接
-                try {
-                    builder.addAllowedApplication(app.getPkgName());
-                    writeLog("Proxy App: " + app.getAppLabel());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    writeLog("Proxy App Fail: " + app.getAppLabel());
+            } else {
+                for (AppInfo app : AppProxyManager.Instance.proxyAppInfo) {
+                    builder.addAllowedApplication("flowerwrong.github.com.smart"); // 需要把自己加入代理，不然会无法进行网络连接
+                    try {
+                        builder.addAllowedApplication(app.getPkgName());
+                        writeLog("Proxy App: " + app.getAppLabel());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        writeLog("Proxy App Fail: " + app.getAppLabel());
+                    }
+                }
+
+                for (String pkg : ProxyConfig.Instance.getProcessListByAction("block")) {
+                    try {
+                        builder.addAllowedApplication(pkg);
+                        writeLog("Proxy App from block process: " + pkg);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        writeLog("Proxy App from block process Fail: " + pkg);
+                    }
                 }
             }
         } else {
