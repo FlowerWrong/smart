@@ -12,6 +12,7 @@ import flowerwrong.github.com.smart.util.SubnetUtil;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.util.InetAddressUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 
@@ -212,7 +213,6 @@ public class ProxyConfig {
         if (m_DomainMap.get(domain) != null) {
             return m_DomainMap.get(domain);
         }
-
         for (String key : m_DomainSuffixMap.keySet()) {
             if (domain.endsWith(key)) {
                 return m_DomainSuffixMap.get(key);
@@ -239,6 +239,12 @@ public class ProxyConfig {
         }
 
         if (host != null) {
+            if (InetAddressUtils.isIPv4Address(host) || InetAddressUtils.isIPv6Address(host)) {
+                if (DnsProxy.NoneProxyIPDomainMaps.get(ip) != null) {
+                    host = DnsProxy.NoneProxyIPDomainMaps.get(ip);
+                }
+            }
+
             String action = getDomainState(host);
 
             if (action != null) {
@@ -343,7 +349,7 @@ public class ProxyConfig {
         loadFromLines(lines);
     }
 
-    protected int loadFromLines(String[] lines) throws Exception {
+    public int loadFromLines(String[] lines) throws Exception {
         m_IpList.clear();
         m_DnsList.clear();
         m_RouteList.clear();

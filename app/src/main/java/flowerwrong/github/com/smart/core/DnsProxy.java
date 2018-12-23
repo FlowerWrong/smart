@@ -45,7 +45,10 @@ public class DnsProxy implements Runnable {
     }
 
     public static String reverseLookup(int ip) {
-        return IPDomainMaps.get(ip);
+        if (IPDomainMaps.get(ip) != null) {
+            return IPDomainMaps.get(ip);
+        }
+        return NoneProxyIPDomainMaps.get(ip);
     }
 
     public void start() {

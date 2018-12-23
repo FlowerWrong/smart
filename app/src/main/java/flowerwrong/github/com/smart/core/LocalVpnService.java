@@ -18,6 +18,8 @@ import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CountryResponse;
 import com.maxmind.geoip2.record.Country;
 
+import org.apache.commons.io.IOUtils;
+
 import flowerwrong.github.com.smart.net.TcpUdpClientInfo;
 import flowerwrong.github.com.smart.ui.MainActivity;
 import flowerwrong.github.com.smart.R;
@@ -36,6 +38,7 @@ import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
@@ -183,7 +186,8 @@ public class LocalVpnService extends VpnService implements Runnable {
 
             try {
                 FileInputStream fis = context.openFileInput(LocalVpnService.configFile);
-                int ruleCount = ProxyConfig.Instance.loadFromFile(fis);
+                String rules = IOUtils.toString(fis, Charset.defaultCharset());
+                int ruleCount = ProxyConfig.Instance.loadFromLines(rules.split("\\r?\\n"));
                 writeLog("Load config from file done " + ruleCount);
             } catch (Exception e) {
                 String errString = e.getMessage();
