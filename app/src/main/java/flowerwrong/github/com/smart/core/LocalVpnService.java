@@ -18,7 +18,7 @@ import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CountryResponse;
 import com.maxmind.geoip2.record.Country;
 
-import flowerwrong.github.com.smart.net.TcpClientInfo;
+import flowerwrong.github.com.smart.net.TcpUdpClientInfo;
 import flowerwrong.github.com.smart.ui.MainActivity;
 import flowerwrong.github.com.smart.R;
 import flowerwrong.github.com.smart.core.ProxyConfig.IPAddress;
@@ -274,17 +274,18 @@ public class LocalVpnService extends VpnService implements Runnable {
      * @throws IOException
      */
     void onIPPacketReceived(IPHeader ipHeader, int size) throws IOException {
+        byte[] sourceIp = CommonMethods.ipIntToInet4Address(ipHeader.getSourceIP()).getAddress();
+        byte[] destinationIp = CommonMethods.ipIntToInet4Address(ipHeader.getDestinationIP()).getAddress();
+        Integer uid = null;
+
         switch (ipHeader.getProtocol()) {
             case IPHeader.TCP:
                 TCPHeader tcpHeader = m_TCPHeader;
                 tcpHeader.m_Offset = ipHeader.getHeaderLength();
 
-                byte[] sourceIp = CommonMethods.ipIntToInet4Address(ipHeader.getSourceIP()).getAddress();
-                byte[] destinationIp = CommonMethods.ipIntToInet4Address(ipHeader.getDestinationIP()).getAddress();
-                Integer uid = TcpClientInfo.getUidForConnection(sourceIp, tcpHeader.getSourcePort(), destinationIp, tcpHeader.getDestinationPort());
-
+                uid = TcpUdpClientInfo.getUidForConnection(true, sourceIp, tcpHeader.getSourcePort(), destinationIp, tcpHeader.getDestinationPort());
                 if (uid != null) {
-                    PackageInfo packageInfo = TcpClientInfo.getPackageInfoForUid(LocalVpnService.context, uid);
+                    PackageInfo packageInfo = TcpUdpClientInfo.getPackageInfoForUid(LocalVpnService.context, uid);
                     if (packageInfo != null && blacklistApp.contains(packageInfo.packageName)) {
                         return;
                     }
@@ -344,6 +345,18 @@ public class LocalVpnService extends VpnService implements Runnable {
                 // 转发DNS数据包
                 UDPHeader udpHeader = m_UDPHeader;
                 udpHeader.m_Offset = ipHeader.getHeaderLength();
+
+                uid = TcpUdpClientInfo.getUidForConnection(false, sourceIp, udpHeader.getSourcePort(), destinationIp, udpHeader.getDestinationPort());
+                if (uid != null) {
+                    PackageInfo packageInfo = TcpUdpClientInfo.getPackageInfoForUid(LocalVpnService.context, uid);
+                    if (packageInfo != null) {
+                        LocalVpnService.Instance.writeLog("udp app " + packageInfo.packageName + "\n");
+                    }
+                    if (packageInfo != null && blacklistApp.contains(packageInfo.packageName)) {
+                        return;
+                    }
+                }
+
                 if (ipHeader.getSourceIP() == LOCAL_IP && udpHeader.getDestinationPort() == 53) {
                     m_DNSBuffer.clear();
                     m_DNSBuffer.limit(ipHeader.getDataLength() - 8);

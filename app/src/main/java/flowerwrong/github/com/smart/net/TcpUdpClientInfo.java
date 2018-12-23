@@ -19,18 +19,22 @@ import java.util.List;
 import flowerwrong.github.com.smart.nogotofail.Closeables;
 import flowerwrong.github.com.smart.nogotofail.HexEncoding;
 
-public class TcpClientInfo {
-    private static final String TAG = TcpClientInfo.class.getSimpleName();
+public class TcpUdpClientInfo {
+    private static final String TAG = TcpUdpClientInfo.class.getSimpleName();
+
+    public static String tcpLocation = "/proc/net/tcp";
+    public static String udpLocation = "/proc/net/udp";
+    public static String tcp6Location = "/proc/net/tcp6";
+    public static String udp6Location = "/proc/net/udp6";
 
     private final Context mContext;
 
-    public TcpClientInfo(Context context) {
+    public TcpUdpClientInfo(Context context) {
         mContext = context;
     }
 
-    public static Integer getUidForConnection(
-            byte[] sourceIp, int sourcePort, byte[] destinationIp, int destinationPort) {
-
+    public static Integer getUidForConnection(boolean isTcp,
+                                              byte[] sourceIp, int sourcePort, byte[] destinationIp, int destinationPort) {
         // Convert the IP address to the format used by /proc/net/tcp and /proc/net/tcp6
         if (sourceIp != null) {
             try {
@@ -49,71 +53,150 @@ public class TcpClientInfo {
             }
         }
 
-        // Try IPv6 first followed by IPv4.
-        String[][] procNetTcp6 = null;
-        try {
-            procNetTcp6 = readProcNetTcp(new File("/proc/net/tcp6"));
-        } catch (IOException e) {
-            Log.w(TAG, "Failed to load IPv6 TCP info", e);
-        }
-        if (procNetTcp6 != null) {
-            Integer uid = getUidForConnection(
-                    procNetTcp6, sourceIp, sourcePort, destinationIp, destinationPort);
-            if (uid != null) {
-                return uid;
-            }
-        }
-
-        // Addresses longer than 4 bytes can't match anything in IPv4 table.
-        boolean needCheckIpv4Table =
-                ((sourceIp == null) || (sourceIp.length <= 4))
-                        && ((destinationIp == null) || (destinationIp.length <= 4));
-        String[][] procNetTcp4 = null;
-        if (needCheckIpv4Table) {
+        if (isTcp) {
+            // Try IPv6 first followed by IPv4.
+            String[][] procNetTcp6 = null;
             try {
-                procNetTcp4 = readProcNetTcp(new File("/proc/net/tcp"));
+                procNetTcp6 = readProcNet(new File(tcp6Location));
             } catch (IOException e) {
-                Log.w(TAG, "Failed to load IPv4 TCP info", e);
+                Log.w(TAG, "Failed to load IPv6 TCP info", e);
             }
-            if (procNetTcp4 != null) {
+            if (procNetTcp6 != null) {
                 Integer uid = getUidForConnection(
-                        procNetTcp4, sourceIp, sourcePort, destinationIp, destinationPort);
+                        procNetTcp6, sourceIp, sourcePort, destinationIp, destinationPort);
                 if (uid != null) {
                     return uid;
                 }
             }
-        }
 
-        // No exact match found -- try without matching the source IP because when an Android is on a
-        // VPNs the source IP may be different (WLAN address instead of VPN address) but source port
-        // (luckily) appears to stay the same.
-        if (sourceIp == null) {
-            // Source IP wasn't being matched anyway
-            return null;
-        }
-        if (procNetTcp6 != null) {
-            Integer uid = getUidForConnection(
-                    procNetTcp6, null, sourcePort, destinationIp, destinationPort);
-            if (uid != null) {
-                return uid;
-            }
-        }
-
-        // Addresses longer than 4 bytes can't match anything in IPv4 table.
-        needCheckIpv4Table = ((destinationIp == null) || (destinationIp.length <= 4));
-        if (needCheckIpv4Table) {
-            if (procNetTcp4 == null) {
+            // Addresses longer than 4 bytes can't match anything in IPv4 table.
+            boolean needCheckIpv4Table =
+                    ((sourceIp == null) || (sourceIp.length <= 4))
+                            && ((destinationIp == null) || (destinationIp.length <= 4));
+            String[][] procNetTcp4 = null;
+            if (needCheckIpv4Table) {
                 try {
-                    procNetTcp4 = readProcNetTcp(new File("/proc/net/tcp"));
+                    procNetTcp4 = readProcNet(new File(tcpLocation));
                 } catch (IOException e) {
                     Log.w(TAG, "Failed to load IPv4 TCP info", e);
                 }
+                if (procNetTcp4 != null) {
+                    Integer uid = getUidForConnection(
+                            procNetTcp4, sourceIp, sourcePort, destinationIp, destinationPort);
+                    if (uid != null) {
+                        return uid;
+                    }
+                }
             }
-            if (procNetTcp4 != null) {
+
+            // No exact match found -- try without matching the source IP because when an Android is on a
+            // VPNs the source IP may be different (WLAN address instead of VPN address) but source port
+            // (luckily) appears to stay the same.
+            if (sourceIp == null) {
+                // Source IP wasn't being matched anyway
+                return null;
+            }
+            if (procNetTcp6 != null) {
                 Integer uid = getUidForConnection(
-                        procNetTcp4, null, sourcePort, destinationIp, destinationPort);
+                        procNetTcp6, null, sourcePort, destinationIp, destinationPort);
                 if (uid != null) {
                     return uid;
+                }
+            }
+
+            // Addresses longer than 4 bytes can't match anything in IPv4 table.
+            needCheckIpv4Table = ((destinationIp == null) || (destinationIp.length <= 4));
+            if (needCheckIpv4Table) {
+                if (procNetTcp4 == null) {
+                    try {
+                        procNetTcp4 = readProcNet(new File(tcpLocation));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Log.w(TAG, "Failed to load IPv4 TCP info", e);
+                    }
+                }
+                if (procNetTcp4 != null) {
+                    Integer uid = getUidForConnection(
+                            procNetTcp4, null, sourcePort, destinationIp, destinationPort);
+                    if (uid != null) {
+                        return uid;
+                    }
+                }
+            }
+        } else {
+            // TODO fixme
+            // udp support
+            // Try IPv6 first followed by IPv4.
+            String[][] procNetUdp6 = null;
+            try {
+                procNetUdp6 = readProcNet(new File(udp6Location));
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.w(TAG, "Failed to load IPv6 UDP info", e);
+            }
+            if (procNetUdp6 != null) {
+                Integer uid = getUidForConnection(
+                        procNetUdp6, sourceIp, sourcePort, destinationIp, destinationPort);
+                if (uid != null) {
+                    return uid;
+                }
+            }
+
+            // Addresses longer than 4 bytes can't match anything in IPv4 table.
+            boolean needCheckIpv4Table =
+                    ((sourceIp == null) || (sourceIp.length <= 4))
+                            && ((destinationIp == null) || (destinationIp.length <= 4));
+            String[][] procNetUdp4 = null;
+            if (needCheckIpv4Table) {
+                try {
+                    procNetUdp4 = readProcNet(new File(udpLocation));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Log.w(TAG, "Failed to load IPv4 UDP info", e);
+                }
+                if (procNetUdp4 != null) {
+                    Integer uid = getUidForConnection(
+                            procNetUdp4, sourceIp, sourcePort, destinationIp, destinationPort);
+                    if (uid != null) {
+                        return uid;
+                    }
+                }
+            }
+
+            // No exact match found -- try without matching the source IP because when an Android is on a
+            // VPNs the source IP may be different (WLAN address instead of VPN address) but source port
+            // (luckily) appears to stay the same.
+            if (sourceIp == null) {
+                // Source IP wasn't being matched anyway
+                return null;
+            }
+            // udp support
+            if (procNetUdp6 != null) {
+                Integer uid = getUidForConnection(
+                        procNetUdp6, null, sourcePort, destinationIp, destinationPort);
+                if (uid != null) {
+                    return uid;
+                }
+            }
+
+            // Addresses longer than 4 bytes can't match anything in IPv4 table.
+            needCheckIpv4Table = ((destinationIp == null) || (destinationIp.length <= 4));
+            if (needCheckIpv4Table) {
+                // udp support
+                if (procNetUdp4 == null) {
+                    try {
+                        procNetUdp4 = readProcNet(new File(udpLocation));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Log.w(TAG, "Failed to load IPv4 UDP info", e);
+                    }
+                }
+                if (procNetUdp4 != null) {
+                    Integer uid = getUidForConnection(
+                            procNetUdp4, null, sourcePort, destinationIp, destinationPort);
+                    if (uid != null) {
+                        return uid;
+                    }
                 }
             }
         }
@@ -163,12 +246,6 @@ public class TcpClientInfo {
     private static Integer getUidForConnection(String[][] procNetTcpLines,
                                                byte[] sourceIpInProcFormat, int sourcePort,
                                                byte[] destinationIpInProcFormat, int destinationPort) {
-        Log.d(TAG, "Looking up: "
-                + ((sourceIpInProcFormat != null) ? HexEncoding.encode(sourceIpInProcFormat) : "any")
-                + ":" + ((sourcePort >= 0) ? Integer.toHexString(sourcePort) : "any")
-                + " " + ((destinationIpInProcFormat != null)
-                ? HexEncoding.encode(destinationIpInProcFormat) : "any")
-                + ":" + ((destinationPort >= 0) ? Integer.toHexString(destinationPort) : "any"));
         for (String[] fields : procNetTcpLines) {
             // Skip empty lines
             if (fields.length == 0) {
@@ -265,10 +342,19 @@ public class TcpClientInfo {
     }
 
     /**
-     * Reads the contents of the {@code /proc/net/tcp} (or similar) and returns its lines (excluding
+     * Reads the contents of the {@code /proc/net/tcp} (or /proc/net/tcp6 /proc/net/udp /proc/net/udp6) and returns its lines (excluding
      * the header).
      */
-    private static String[][] readProcNetTcp(File file) throws IOException {
+    private static String[][] readProcNet(File file) throws IOException {
+        /*
+         * Sample output of "cat /proc/net/tcp" on emulator:
+         *
+         * sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  ...
+         * 0: 0100007F:13AD 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0   ...
+         * 1: 00000000:15B3 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0   ...
+         * 2: 0F02000A:15B3 0202000A:CE8A 01 00000000:00000000 00:00000000 00000000     0   ...
+         *
+         */
         BufferedReader in = null;
         try {
             in = new BufferedReader(new InputStreamReader(new FileInputStream(file), "US-ASCII"));
