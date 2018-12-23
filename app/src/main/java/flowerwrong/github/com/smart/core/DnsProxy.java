@@ -161,8 +161,6 @@ public class DnsProxy implements Runnable {
                         fakeIP = getOrCreateFakeIP(question.Domain);
 
                     tamperDnsResponse(rawPacket, dnsPacket, fakeIP);
-                    if (ProxyConfig.IS_DEBUG)
-                        LocalVpnService.Instance.writeLog("[DNS] fake %s=>%s(%s)\n", question.Domain, CommonMethods.ipIntToString(realIP), CommonMethods.ipIntToString(fakeIP));
                     return true;
                 } else {
                     NoneProxyIPDomainMaps.put(realIP, question.Domain);
@@ -183,9 +181,6 @@ public class DnsProxy implements Runnable {
 
         if (state != null) {
             // DNS污染，默认污染海外网站
-            if (ProxyConfig.IS_DEBUG)
-                LocalVpnService.Instance.writeLog("[DNS Response] " + dnsPacket.Questions[0].Domain + " " + CommonMethods.ipIntToString(state.RemoteIP) + ":" + state.RemotePort + "<->" + CommonMethods.ipIntToString(state.ClientIP) + ":" + state.ClientPort);
-
             dnsPollution(udpHeader.m_Data, dnsPacket);
 
             dnsPacket.Header.setID(state.ClientQueryID);
@@ -222,9 +217,6 @@ public class DnsProxy implements Runnable {
                     fakeIP = getOrCreateFakeIP(question.Domain);
                 tamperDnsResponse(ipHeader.m_Data, dnsPacket, fakeIP);
 
-                if (ProxyConfig.IS_DEBUG)
-                    LocalVpnService.Instance.writeLog("[DNS] fake %s=>%s\n", question.Domain, CommonMethods.ipIntToString(fakeIP));
-
                 // 返回fake ip
                 int sourceIP = ipHeader.getSourceIP();
                 short sourcePort = udpHeader.getSourcePort();
@@ -255,8 +247,6 @@ public class DnsProxy implements Runnable {
 
     public void onDnsRequestReceived(IPHeader ipHeader, UDPHeader udpHeader, DnsPacket dnsPacket) {
         // 不拦截，转发dns数据包
-        if (ProxyConfig.IS_DEBUG)
-            LocalVpnService.Instance.writeLog("[DNS Request] " + dnsPacket.Questions[0].Domain + " " + CommonMethods.ipIntToString(ipHeader.getSourceIP()) + ":" + udpHeader.getSourcePort() + "<->" + CommonMethods.ipIntToString(ipHeader.getDestinationIP()) + ":" + udpHeader.getDestinationPort());
         if (!interceptDns(ipHeader, udpHeader, dnsPacket)) {
             // 转发DNS
             QueryState state = new QueryState();

@@ -124,7 +124,6 @@ public class TcpUdpClientInfo {
                 }
             }
         } else {
-            // TODO fixme
             // udp support
             // Try IPv6 first followed by IPv4.
             String[][] procNetUdp6 = null;
@@ -202,25 +201,6 @@ public class TcpUdpClientInfo {
         }
 
         return null;
-    }
-
-    public static String getAppInfoForUid(Context context, int uid)
-            throws PackageManager.NameNotFoundException {
-        PackageManager packageManager = context.getPackageManager();
-        String[] packageNames = packageManager.getPackagesForUid(uid);
-        if ((packageNames == null) || (packageNames.length == 0)) {
-            throw new PackageManager.NameNotFoundException("uid: " + uid);
-        }
-
-        StringBuilder result = new StringBuilder();
-        for (String packageName : packageNames) {
-            if (result.length() > 0) {
-                result.append(", ");
-            }
-            PackageInfo packageInfo = packageManager.getPackageInfo(packageName, 0);
-            result.append(packageInfo.packageName + " " + packageInfo.versionCode);
-        }
-        return result.toString();
     }
 
     public static PackageInfo getPackageInfoForUid(Context context, int uid) {

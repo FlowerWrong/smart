@@ -349,9 +349,6 @@ public class LocalVpnService extends VpnService implements Runnable {
                 uid = TcpUdpClientInfo.getUidForConnection(false, sourceIp, udpHeader.getSourcePort(), destinationIp, udpHeader.getDestinationPort());
                 if (uid != null) {
                     PackageInfo packageInfo = TcpUdpClientInfo.getPackageInfoForUid(LocalVpnService.context, uid);
-                    if (packageInfo != null) {
-                        LocalVpnService.Instance.writeLog("udp app " + packageInfo.packageName + "\n");
-                    }
                     if (packageInfo != null && blacklistApp.contains(packageInfo.packageName)) {
                         return;
                     }
