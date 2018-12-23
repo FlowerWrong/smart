@@ -85,7 +85,7 @@ public abstract class Tunnel {
         }
 
         if (buffer.hasRemaining()) { // 数据没有发送完毕
-            if (copyRemainData) { // 拷贝剩余数据，然后侦听写入事件，待可写入时写入。
+            if (copyRemainData) { // 拷贝剩余数据，然后侦听写入事件，待可写入时写入
                 // 拷贝剩余数据
                 if (m_SendRemainBuffer == null) {
                     m_SendRemainBuffer = ByteBuffer.allocate(buffer.capacity());
@@ -103,14 +103,14 @@ public abstract class Tunnel {
 
     protected void onTunnelEstablished() throws Exception {
         this.beginReceive(); // 开始接收数据
-        m_BrotherTunnel.beginReceive(); // 兄弟也开始收数据吧
+        m_BrotherTunnel.beginReceive(); // 兄弟也开始收数据
     }
 
     @SuppressLint("DefaultLocale")
     public void onConnectable() {
         try {
             if (m_InnerChannel.finishConnect()) { // 连接成功
-                onConnected(GL_BUFFER); // 通知子类TCP已连接，子类可以根据协议实现握手等。
+                onConnected(GL_BUFFER); // 通知子类TCP已连接，子类可以根据协议实现握手等
             } else { // 连接失败
                 LocalVpnService.Instance.writeLog("Error: connect to %s failed.", m_ServerEP);
                 this.dispose();
@@ -133,9 +133,9 @@ public abstract class Tunnel {
             int bytesRead = m_InnerChannel.read(buffer);
             if (bytesRead > 0) {
                 buffer.flip();
-                afterReceived(buffer); // 先让子类处理，例如解密数据。
-                if (isTunnelEstablished() && buffer.hasRemaining()) { // 将读到的数据，转发给兄弟。
-                    m_BrotherTunnel.beforeSend(buffer); // 发送之前，先让子类处理，例如做加密等。
+                afterReceived(buffer); // 先让子类处理，例如解密数据
+                if (isTunnelEstablished() && buffer.hasRemaining()) { // 将读到的数据，转发给兄弟
+                    m_BrotherTunnel.beforeSend(buffer); // 发送之前，先让子类处理，例如做加密等
                     if (!m_BrotherTunnel.write(buffer, true)) {
                         key.cancel(); // 兄弟吃不消，就取消读取事件
                         if (ProxyConfig.IS_DEBUG)
@@ -157,11 +157,11 @@ public abstract class Tunnel {
 
     public void onWritable(SelectionKey key) {
         try {
-            this.beforeSend(m_SendRemainBuffer); // 发送之前，先让子类处理，例如做加密等。
+            this.beforeSend(m_SendRemainBuffer); // 发送之前，先让子类处理，例如做加密等
             if (this.write(m_SendRemainBuffer, false)) { // 如果剩余数据已经发送完毕
-                key.cancel(); // 取消写事件。
+                key.cancel(); // 取消写事件
                 if (isTunnelEstablished()) {
-                    m_BrotherTunnel.beginReceive(); // 这边数据发送完毕，通知兄弟可以收数据了。
+                    m_BrotherTunnel.beginReceive(); // 这边数据发送完毕，通知兄弟可以收数据了
                 } else {
                     this.beginReceive(); // 开始接收代理服务器响应数据
                 }

@@ -3,9 +3,9 @@ package flowerwrong.github.com.smart.ui;
 import android.animation.Animator;
 import android.app.ActionBar;
 import android.app.Activity;
-import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -26,7 +26,6 @@ import flowerwrong.github.com.smart.R;
 import flowerwrong.github.com.smart.core.AppInfo;
 import flowerwrong.github.com.smart.core.AppProxyManager;
 
-import java.util.Collections;
 import java.util.List;
 
 import io.reactivex.Observable;
@@ -112,22 +111,20 @@ public class AppManager extends Activity {
 
     public void queryAppInfo() {
         PackageManager pm = this.getPackageManager(); // 获得PackageManager对象
-        Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
-        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-        List<ResolveInfo> resolveInfos = pm.queryIntentActivities(mainIntent, 0);
-        Collections.sort(resolveInfos, new ResolveInfo.DisplayNameComparator(pm));
+        List<PackageInfo> apps = pm.getInstalledPackages(0);
+
         if (AppProxyManager.Instance.mlistAppInfo != null) {
             AppProxyManager.Instance.mlistAppInfo.clear();
-            for (ResolveInfo reInfo : resolveInfos) {
-                String pkgName = reInfo.activityInfo.packageName; // 获得应用程序的包名
-                String appLabel = (String) reInfo.loadLabel(pm); // 获得应用程序的Label
-                Drawable icon = reInfo.loadIcon(pm); // 获得应用程序图标
-                AppInfo appInfo = new AppInfo();
-                appInfo.setAppLabel(appLabel);
-                appInfo.setPkgName(pkgName);
-                appInfo.setAppIcon(icon);
-                if (!appInfo.getPkgName().equals("flowerwrong.github.com.smart")) // App本身会强制加入代理列表
-                    AppProxyManager.Instance.mlistAppInfo.add(appInfo);
+
+            for (PackageInfo pi : apps) {
+                if (!isSystemPackage(pi)) {
+                    addAppInfo(pi, pm);
+                }
+            }
+            for (PackageInfo pi : apps) {
+                if (isSystemPackage(pi)) {
+                    addAppInfo(pi, pm);
+                }
             }
         }
     }
@@ -141,6 +138,24 @@ public class AppManager extends Activity {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private boolean isSystemPackage(PackageInfo packageInfo) {
+        return ((packageInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0);
+    }
+
+    private void addAppInfo(PackageInfo pi, PackageManager pm) {
+        ApplicationInfo ai = pi.applicationInfo;
+        String pkgName = pi.packageName; // 获得应用程序的包名
+        String appLabel = ai.loadLabel(pm).toString(); // 获得应用程序的Label
+        Drawable icon = ai.loadIcon(pm); // 获得应用程序图标
+        AppInfo appInfo = new AppInfo();
+        appInfo.setAppLabel(appLabel);
+        appInfo.setPkgName(pkgName);
+        appInfo.setAppIcon(icon);
+        appInfo.setSys(isSystemPackage(pi));
+        if (!appInfo.getPkgName().equals("flowerwrong.github.com.smart")) // App本身会强制加入代理列表
+            AppProxyManager.Instance.mlistAppInfo.add(appInfo);
     }
 
 }

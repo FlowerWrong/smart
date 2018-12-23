@@ -6,6 +6,7 @@ public class AppInfo {
     private Drawable appIcon;
     private String appLabel;
     private String pkgName;
+    private boolean sys;
 
     public AppInfo() {
     }
@@ -32,5 +33,13 @@ public class AppInfo {
 
     public void setPkgName(String var1) {
         this.pkgName = var1;
+    }
+
+    public boolean isSys() {
+        return sys;
+    }
+
+    public void setSys(boolean sys) {
+        this.sys = sys;
     }
 }
