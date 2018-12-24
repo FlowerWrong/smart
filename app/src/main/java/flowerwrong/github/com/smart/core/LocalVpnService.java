@@ -184,8 +184,9 @@ public class LocalVpnService extends VpnService implements Runnable {
 
             waitUntilPreapred(); // 检查是否准备完毕
 
+            FileInputStream fis = null;
             try {
-                FileInputStream fis = context.openFileInput(LocalVpnService.configFile);
+                fis = context.openFileInput(LocalVpnService.configFile);
                 String rules = IOUtils.toString(fis, Charset.defaultCharset());
                 int ruleCount = ProxyConfig.Instance.loadFromLines(rules.split("\\r?\\n"));
                 writeLog("Load config from file done " + ruleCount);
@@ -195,6 +196,14 @@ public class LocalVpnService extends VpnService implements Runnable {
                     errString = e.toString();
                 }
                 writeLog("Load failed with error: %s", errString);
+            } finally {
+                if (fis != null) {
+                    try {
+                        fis.close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             }
 
             // init maxmind
