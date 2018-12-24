@@ -79,7 +79,6 @@ public abstract class Tunnel {
     protected boolean write(ByteBuffer buffer, boolean copyRemainData) throws Exception {
         int bytesSent;
         while (buffer.hasRemaining()) {
-            buffer.flip();
             bytesSent = m_InnerChannel.write(buffer);
             if (bytesSent == 0) {
                 break; // 不能再发送了，终止循环
