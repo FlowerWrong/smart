@@ -5,6 +5,7 @@ import android.os.Build;
 
 import flowerwrong.github.com.smart.tcpip.CommonMethods;
 import flowerwrong.github.com.smart.tunnel.Config;
+import flowerwrong.github.com.smart.tunnel.Tunnel;
 import flowerwrong.github.com.smart.tunnel.httpconnect.HttpConnectConfig;
 import flowerwrong.github.com.smart.tunnel.shadowsocks.ShadowsocksConfig;
 import flowerwrong.github.com.smart.util.SubnetUtil;
@@ -58,6 +59,7 @@ public class ProxyConfig {
     String m_user_agent;
     boolean m_isolate_http_host_header = true;
     int m_mtu;
+    String m_final_action = "direct";
 
     Timer m_Timer;
 
@@ -201,7 +203,7 @@ public class ProxyConfig {
     }
 
     public int getMTU() {
-        if (m_mtu > 1400 && m_mtu <= 20000) {
+        if (m_mtu > 1400 && m_mtu <= Tunnel.BUFFER_SIZE) {
             return m_mtu;
         } else {
             return 1500;
@@ -282,7 +284,7 @@ public class ProxyConfig {
             }
         }
 
-        return "direct";
+        return m_final_action;
     }
 
     public boolean isIsolateHttpHostHeader() {
@@ -436,6 +438,8 @@ public class ProxyConfig {
                         m_user_agent = line.substring(line.indexOf(" ")).trim();
                     } else if (tagString.equals("isolate_http_host_header")) {
                         m_isolate_http_host_header = convertToBool(items[1]);
+                    } else if (tagString.equals("final")) {
+                        m_final_action = items[1].trim();
                     }
                 }
             } catch (Exception e) {

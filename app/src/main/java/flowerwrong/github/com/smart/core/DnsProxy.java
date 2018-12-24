@@ -208,12 +208,17 @@ public class DnsProxy implements Runnable {
         }
     }
 
+    // dns 请求之前拦截
     private boolean interceptDns(IPHeader ipHeader, UDPHeader udpHeader, DnsPacket dnsPacket) {
         Question question = dnsPacket.Questions[0];
         // Requests the A record for the domain name
         if (question.Type == 1) {
             // 此时needProxy只有域名存在，如果cache里面有，那么都存在
             String action = ProxyConfig.Instance.needProxy(question.Domain, getIPFromCache(question.Domain));
+
+//            if (ProxyConfig.IS_DEBUG)
+//                LocalVpnService.Instance.writeLog("[DNS] query: " + question.Domain + " to " + CommonMethods.ipIntToString(ipHeader.getDestinationIP()) + ":" + udpHeader.getDestinationPort() + " " + action);
+
             if (action.equals("proxy") || action.equals("block")) {
                 int fakeIP = 0; // block
                 if (action.equals("proxy"))
@@ -249,7 +254,6 @@ public class DnsProxy implements Runnable {
     }
 
     public void onDnsRequestReceived(IPHeader ipHeader, UDPHeader udpHeader, DnsPacket dnsPacket) {
-        // 不拦截，转发dns数据包
         if (!interceptDns(ipHeader, udpHeader, dnsPacket)) {
             // 转发DNS
             QueryState state = new QueryState();

@@ -21,6 +21,7 @@ import com.maxmind.geoip2.record.Country;
 import org.apache.commons.io.IOUtils;
 
 import flowerwrong.github.com.smart.net.TcpUdpClientInfo;
+import flowerwrong.github.com.smart.tunnel.Tunnel;
 import flowerwrong.github.com.smart.ui.MainActivity;
 import flowerwrong.github.com.smart.R;
 import flowerwrong.github.com.smart.core.ProxyConfig.IPAddress;
@@ -77,12 +78,24 @@ public class LocalVpnService extends VpnService implements Runnable {
     public LocalVpnService() {
         ID++;
         m_Handler = new Handler();
-        m_Packet = new byte[20000];
+        m_Packet = new byte[Tunnel.BUFFER_SIZE];
         m_IPHeader = new IPHeader(m_Packet, 0);
         m_TCPHeader = new TCPHeader(m_Packet, 20);
         m_UDPHeader = new UDPHeader(m_Packet, 20);
         m_DNSBuffer = ((ByteBuffer) ByteBuffer.wrap(m_Packet).position(28)).slice();
         Instance = this;
+    }
+
+    public static void addOnStatusChangedListener(onStatusChangedListener listener) {
+        if (!m_OnStatusChangedListeners.containsKey(listener)) {
+            m_OnStatusChangedListeners.put(listener, 1);
+        }
+    }
+
+    public static void removeOnStatusChangedListener(onStatusChangedListener listener) {
+        if (m_OnStatusChangedListeners.containsKey(listener)) {
+            m_OnStatusChangedListeners.remove(listener);
+        }
     }
 
     @Override
@@ -97,24 +110,6 @@ public class LocalVpnService extends VpnService implements Runnable {
     public int onStartCommand(Intent intent, int flags, int startId) {
         IsRunning = true;
         return super.onStartCommand(intent, flags, startId);
-    }
-
-    public interface onStatusChangedListener {
-        public void onStatusChanged(String status, Boolean isRunning);
-
-        public void onLogReceived(String logString);
-    }
-
-    public static void addOnStatusChangedListener(onStatusChangedListener listener) {
-        if (!m_OnStatusChangedListeners.containsKey(listener)) {
-            m_OnStatusChangedListeners.put(listener, 1);
-        }
-    }
-
-    public static void removeOnStatusChangedListener(onStatusChangedListener listener) {
-        if (m_OnStatusChangedListeners.containsKey(listener)) {
-            m_OnStatusChangedListeners.remove(listener);
-        }
     }
 
     private void onStatusChanged(final String status, final boolean isRunning) {
@@ -175,7 +170,7 @@ public class LocalVpnService extends VpnService implements Runnable {
     @Override
     public synchronized void run() {
         try {
-            LocalVpnService.Instance.writeLog("VPNService(%s) work thread is runing...\n", ID);
+            LocalVpnService.Instance.writeLog("VPNService(%s) work thread is runing...", ID);
 
             ProxyConfig.AppInstallID = getAppInstallID(); // 获取安装ID
             ProxyConfig.AppVersion = getVersionName(); // 获取版本号
@@ -205,6 +200,7 @@ public class LocalVpnService extends VpnService implements Runnable {
                     }
                 }
             }
+            writeLog("Final action: %s", ProxyConfig.Instance.m_final_action);
 
             // init maxmind
             InputStream maxmindInputStream = getResources().openRawResource(R.raw.geolite2);
@@ -284,22 +280,26 @@ public class LocalVpnService extends VpnService implements Runnable {
      * @throws IOException
      */
     void onIPPacketReceived(IPHeader ipHeader, int size) throws IOException {
-        byte[] sourceIp = CommonMethods.ipIntToInet4Address(ipHeader.getSourceIP()).getAddress();
-        byte[] destinationIp = CommonMethods.ipIntToInet4Address(ipHeader.getDestinationIP()).getAddress();
-        Integer uid = null;
-
         switch (ipHeader.getProtocol()) {
             case IPHeader.TCP:
                 TCPHeader tcpHeader = m_TCPHeader;
                 tcpHeader.m_Offset = ipHeader.getHeaderLength();
 
+                byte[] sourceIp = CommonMethods.ipIntToInet4Address(ipHeader.getSourceIP()).getAddress();
+                byte[] destinationIp = CommonMethods.ipIntToInet4Address(ipHeader.getDestinationIP()).getAddress();
+                Integer uid = null;
                 uid = TcpUdpClientInfo.getUidForConnection(true, sourceIp, tcpHeader.getSourcePort(), destinationIp, tcpHeader.getDestinationPort());
                 if (uid != null) {
                     PackageInfo packageInfo = TcpUdpClientInfo.getPackageInfoForUid(LocalVpnService.context, uid);
+//                    if (packageInfo != null) {
+//                        if (ProxyConfig.IS_DEBUG)
+//                            LocalVpnService.Instance.writeLog("/proc/net/tcp: " + packageInfo.packageName + "\n");
+//                    }
                     if (packageInfo != null && ProxyConfig.Instance.getProcessListByAction("block").contains(packageInfo.packageName)) {
                         return;
                     }
                 }
+
                 if (ipHeader.getSourceIP() == LOCAL_IP) {
                     if (tcpHeader.getSourcePort() == m_TcpProxyServer.Port) { // 收到本地TCP服务器数据
                         NatSession session = NatSessionManager.getSession(tcpHeader.getDestinationPort());
@@ -356,14 +356,6 @@ public class LocalVpnService extends VpnService implements Runnable {
                 UDPHeader udpHeader = m_UDPHeader;
                 udpHeader.m_Offset = ipHeader.getHeaderLength();
 
-                uid = TcpUdpClientInfo.getUidForConnection(false, sourceIp, udpHeader.getSourcePort(), destinationIp, udpHeader.getDestinationPort());
-                if (uid != null) {
-                    PackageInfo packageInfo = TcpUdpClientInfo.getPackageInfoForUid(LocalVpnService.context, uid);
-                    if (packageInfo != null && ProxyConfig.Instance.getProcessListByAction("block").contains(packageInfo.packageName)) {
-                        return;
-                    }
-                }
-
                 if (ipHeader.getSourceIP() == LOCAL_IP && udpHeader.getDestinationPort() == 53) {
                     m_DNSBuffer.clear();
                     m_DNSBuffer.limit(ipHeader.getDataLength() - 8);
@@ -399,38 +391,56 @@ public class LocalVpnService extends VpnService implements Runnable {
         // dns
         for (ProxyConfig.IPAddress dns : ProxyConfig.Instance.getDnsList()) {
             builder.addDnsServer(dns.Address);
+            if (dns.Address.replaceAll("\\d", "").length() == 3) { // 防止IPv6地址导致问题
+                builder.addRoute(dns.Address, 32);
+                if (ProxyConfig.IS_DEBUG)
+                    LocalVpnService.Instance.writeLog("addRoute: %s/%d", dns.Address, 32);
+            } else {
+                builder.addRoute(dns.Address, 128);
+                if (ProxyConfig.IS_DEBUG)
+                    LocalVpnService.Instance.writeLog("addRoute: %s/%d", dns.Address, 128);
+            }
+            if (ProxyConfig.IS_DEBUG)
+                LocalVpnService.Instance.writeLog("addDnsServer: %s", dns.Address);
         }
 
         // 添加路由
         if (ProxyConfig.Instance.getRouteList().size() > 0) {
             for (ProxyConfig.IPAddress routeAddress : ProxyConfig.Instance.getRouteList()) {
                 builder.addRoute(routeAddress.Address, routeAddress.PrefixLength);
+                if (ProxyConfig.IS_DEBUG)
+                    LocalVpnService.Instance.writeLog("addRoute: %s/%d", routeAddress.Address, routeAddress.PrefixLength);
             }
             builder.addRoute(CommonMethods.ipIntToString(ProxyConfig.FAKE_NETWORK_IP), 16);
 
             if (ProxyConfig.IS_DEBUG)
-                LocalVpnService.Instance.writeLog("addRoute for FAKE_NETWORK: %s/%d\n", CommonMethods.ipIntToString(ProxyConfig.FAKE_NETWORK_IP), 16);
+                LocalVpnService.Instance.writeLog("addRoute for FAKE_NETWORK: %s/%d", CommonMethods.ipIntToString(ProxyConfig.FAKE_NETWORK_IP), 16);
         } else {
             // 所有的IP包都路由到虚拟端口上去
             builder.addRoute("0.0.0.0", 0);
-            // builder.addRoute("0:0:0:0:0:0:0:0", 0);
+            builder.addRoute("0:0:0:0:0:0:0:0", 0);
             if (ProxyConfig.IS_DEBUG)
-                LocalVpnService.Instance.writeLog("addDefaultRoute: 0.0.0.0/0\n");
+                LocalVpnService.Instance.writeLog("addDefaultRoute: 0.0.0.0/0 and 0:0:0:0:0:0:0:0/0");
         }
 
-
-        // 设置dns
+        // route dns server to tun
         Class<?> SystemProperties = Class.forName("android.os.SystemProperties");
         Method method = SystemProperties.getMethod("get", new Class[]{String.class});
         ArrayList<String> servers = new ArrayList<String>();
         for (String name : new String[]{"net.dns1", "net.dns2", "net.dns3", "net.dns4",}) {
             String value = (String) method.invoke(null, name);
             if (value != null && !"".equals(value) && !servers.contains(value)) {
+                if (ProxyConfig.IS_DEBUG)
+                    LocalVpnService.Instance.writeLog("System dns server: " + value);
                 servers.add(value);
                 if (value.replaceAll("\\d", "").length() == 3) { // 防止IPv6地址导致问题
                     builder.addRoute(value, 32);
+                    if (ProxyConfig.IS_DEBUG)
+                        LocalVpnService.Instance.writeLog("addRoute: %s/%d", value, 32);
                 } else {
                     builder.addRoute(value, 128);
+                    if (ProxyConfig.IS_DEBUG)
+                        LocalVpnService.Instance.writeLog("addRoute: %s/%d", value, 128);
                 }
             }
         }
@@ -512,7 +522,7 @@ public class LocalVpnService extends VpnService implements Runnable {
 
     @Override
     public void onDestroy() {
-        LocalVpnService.Instance.writeLog("VPNService(%s) destoried.\n", ID);
+        LocalVpnService.Instance.writeLog("VPNService(%s) destoried", ID);
         if (m_VPNThread != null) {
             m_VPNThread.interrupt();
         }
@@ -538,5 +548,11 @@ public class LocalVpnService extends VpnService implements Runnable {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public interface onStatusChangedListener {
+        public void onStatusChanged(String status, Boolean isRunning);
+
+        public void onLogReceived(String logString);
     }
 }

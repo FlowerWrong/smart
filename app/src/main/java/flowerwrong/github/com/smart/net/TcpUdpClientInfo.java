@@ -124,7 +124,7 @@ public class TcpUdpClientInfo {
                 }
             }
         } else {
-            // udp support
+            // udp support TODO fixme
             // Try IPv6 first followed by IPv4.
             String[][] procNetUdp6 = null;
             try {

@@ -16,7 +16,8 @@ import java.nio.channels.SocketChannel;
 
 public abstract class Tunnel {
 
-    final static ByteBuffer GL_BUFFER = ByteBuffer.allocate(20000);
+    public final static int BUFFER_SIZE = 20000;
+    final static ByteBuffer GL_BUFFER = ByteBuffer.allocate(BUFFER_SIZE);
     public static long SessionCount;
 
     protected abstract void onConnected(ByteBuffer buffer) throws Exception;
@@ -78,6 +79,7 @@ public abstract class Tunnel {
     protected boolean write(ByteBuffer buffer, boolean copyRemainData) throws Exception {
         int bytesSent;
         while (buffer.hasRemaining()) {
+            buffer.flip();
             bytesSent = m_InnerChannel.write(buffer);
             if (bytesSent == 0) {
                 break; // 不能再发送了，终止循环
@@ -139,7 +141,7 @@ public abstract class Tunnel {
                     if (!m_BrotherTunnel.write(buffer, true)) {
                         key.cancel(); // 兄弟吃不消，就取消读取事件
                         if (ProxyConfig.IS_DEBUG)
-                            LocalVpnService.Instance.writeLog("%s can not read more.\n", m_ServerEP);
+                            LocalVpnService.Instance.writeLog("%s can not write more", m_ServerEP);
                     }
                 }
             } else if (bytesRead < 0) {

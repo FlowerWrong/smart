@@ -46,7 +46,7 @@ public class HttpConnectTunnel extends Tunnel {
                 bytesSent = 10 - buffer.remaining();
                 buffer.limit(limit);
                 if (ProxyConfig.IS_DEBUG)
-                    LocalVpnService.Instance.writeLog("Send %d bytes(%s) to %s\n", bytesSent, firString, m_DestAddress);
+                    LocalVpnService.Instance.writeLog("Send %d bytes(%s) to %s", bytesSent, firString, m_DestAddress);
             }
         }
     }
