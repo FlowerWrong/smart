@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
 
+import com.google.common.base.Splitter;
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.AddressNotFoundException;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
@@ -183,7 +184,8 @@ public class LocalVpnService extends VpnService implements Runnable {
             try {
                 fis = context.openFileInput(LocalVpnService.configFile);
                 String rules = IOUtils.toString(fis, Charset.defaultCharset());
-                int ruleCount = ProxyConfig.Instance.loadFromLines(rules.split("\\r?\\n"));
+                String[] lines = Splitter.onPattern("\r?\n").splitToList(rules).toArray(new String[0]);
+                int ruleCount = ProxyConfig.Instance.loadFromLines(lines);
                 writeLog("Load config from file done " + ruleCount);
             } catch (Exception e) {
                 String errString = e.getMessage();
@@ -236,6 +238,7 @@ public class LocalVpnService extends VpnService implements Runnable {
                         writeLog("%s", ProxyConfig.Instance.getWelcomeInfo());
                     }
                     writeLog("Global mode is " + (ProxyConfig.Instance.globalMode ? "on" : "off"));
+                    writeLog("App filter mode is " + (ProxyConfig.Instance.appMode ? "on" : "off"));
 
                     runVPN();
                 } else {
@@ -285,18 +288,25 @@ public class LocalVpnService extends VpnService implements Runnable {
                 TCPHeader tcpHeader = m_TCPHeader;
                 tcpHeader.m_Offset = ipHeader.getHeaderLength();
 
-                byte[] sourceIp = CommonMethods.ipIntToInet4Address(ipHeader.getSourceIP()).getAddress();
-                byte[] destinationIp = CommonMethods.ipIntToInet4Address(ipHeader.getDestinationIP()).getAddress();
-                Integer uid = null;
-                uid = TcpUdpClientInfo.getUidForConnection(true, sourceIp, tcpHeader.getSourcePort(), destinationIp, tcpHeader.getDestinationPort());
-                if (uid != null) {
-                    PackageInfo packageInfo = TcpUdpClientInfo.getPackageInfoForUid(LocalVpnService.context, uid);
-//                    if (packageInfo != null) {
-//                        if (ProxyConfig.IS_DEBUG)
-//                            LocalVpnService.Instance.writeLog("/proc/net/tcp: " + packageInfo.packageName + "\n");
-//                    }
-                    if (packageInfo != null && ProxyConfig.Instance.getProcessListByAction("block").contains(packageInfo.packageName)) {
-                        return;
+                /**
+                 * 一下代码易导致性能问题
+                 */
+                if (ProxyConfig.Instance.appMode) {
+                    try {
+                        byte[] sourceIp = CommonMethods.ipIntToInet4Address(ipHeader.getSourceIP()).getAddress();
+                        byte[] destinationIp = CommonMethods.ipIntToInet4Address(ipHeader.getDestinationIP()).getAddress();
+
+                        Integer uid = null;
+                        uid = TcpUdpClientInfo.getUidForConnection(true, sourceIp, tcpHeader.getSourcePort(), destinationIp, tcpHeader.getDestinationPort());
+
+                        if (uid != null) {
+                            String packageName = TcpUdpClientInfo.getPackageNameForUid(uid);
+                            if (packageName != null && ProxyConfig.Instance.getProcessListByAction("block").contains(packageName)) {
+                                return;
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
 

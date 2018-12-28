@@ -1,5 +1,7 @@
 package flowerwrong.github.com.smart;
 
+import com.google.common.base.Splitter;
+
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -22,7 +24,8 @@ public class URLReqTest {
             InputStream in = u.openStream();
 
             String rules = IOUtils.toString(in, Charset.defaultCharset());
-            ProxyConfig.Instance.loadFromLines(rules.split("\\r?\\n"));
+            String[] lines = Splitter.onPattern("\r?\n").splitToList(rules).toArray(new String[0]);
+            ProxyConfig.Instance.loadFromLines(lines);
 
             String domain = "feed.baidu.com";
             String ip = "61.135.186.217";

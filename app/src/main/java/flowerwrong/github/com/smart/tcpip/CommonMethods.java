@@ -1,5 +1,7 @@
 package flowerwrong.github.com.smart.tcpip;
 
+import com.google.common.base.Splitter;
+
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -28,7 +30,7 @@ public class CommonMethods {
     }
 
     public static int ipStringToInt(String ip) {
-        String[] arrStrings = ip.split("\\.");
+        String[] arrStrings = Splitter.on('.').splitToList(ip).toArray(new String[0]);
         int r = (Integer.parseInt(arrStrings[0]) << 24)
                 | (Integer.parseInt(arrStrings[1]) << 16)
                 | (Integer.parseInt(arrStrings[2]) << 8)

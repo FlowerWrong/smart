@@ -402,6 +402,14 @@ public class MainActivity extends Activity implements
             case R.id.menu_item_clear_log:
                 textViewLog.setText("");
                 return true;
+            case R.id.menu_item_toggle_app:
+                ProxyConfig.Instance.appMode = !ProxyConfig.Instance.appMode;
+                if (ProxyConfig.Instance.appMode) {
+                    onLogReceived("Proxy app mode is on");
+                } else {
+                    onLogReceived("Proxy app mode is off");
+                }
+                return true;
             case R.id.menu_item_update_config:
                 checkConfigFile(true);
                 return true;

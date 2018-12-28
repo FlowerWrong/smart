@@ -1,5 +1,7 @@
 package flowerwrong.github.com.smart.dns;
 
+import com.google.common.base.Splitter;
+
 import java.nio.ByteBuffer;
 
 public class DnsPacket {
@@ -112,12 +114,12 @@ public class DnsPacket {
     }
 
     public static void WriteDomain(String domain, ByteBuffer buffer) {
-        if (domain == null || domain == "") {
+        if (domain == null || domain.equals("")) {
             buffer.put((byte) 0);
             return;
         }
 
-        String[] arr = domain.split("\\.");
+        String[] arr = Splitter.on('.').splitToList(domain).toArray(new String[0]);
         for (String item : arr) {
             if (arr.length > 1) {
                 buffer.put((byte) item.length());

@@ -5,6 +5,8 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
 
+import com.google.common.base.Splitter;
+
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
@@ -16,6 +18,8 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
+import flowerwrong.github.com.smart.core.AppInfo;
+import flowerwrong.github.com.smart.core.AppProxyManager;
 import flowerwrong.github.com.smart.nogotofail.Closeables;
 import flowerwrong.github.com.smart.nogotofail.HexEncoding;
 
@@ -26,12 +30,6 @@ public class TcpUdpClientInfo {
     public static String udpLocation = "/proc/net/udp";
     public static String tcp6Location = "/proc/net/tcp6";
     public static String udp6Location = "/proc/net/udp6";
-
-    private final Context mContext;
-
-    public TcpUdpClientInfo(Context context) {
-        mContext = context;
-    }
 
     public static Integer getUidForConnection(boolean isTcp,
                                               byte[] sourceIp, int sourcePort, byte[] destinationIp, int destinationPort) {
@@ -62,8 +60,7 @@ public class TcpUdpClientInfo {
                 Log.w(TAG, "Failed to load IPv6 TCP info", e);
             }
             if (procNetTcp6 != null) {
-                Integer uid = getUidForConnection(
-                        procNetTcp6, sourceIp, sourcePort, destinationIp, destinationPort);
+                Integer uid = getUidForConnection(procNetTcp6, sourceIp, sourcePort, destinationIp, destinationPort);
                 if (uid != null) {
                     return uid;
                 }
@@ -124,7 +121,7 @@ public class TcpUdpClientInfo {
                 }
             }
         } else {
-            // udp support TODO fixme
+            // udp support
             // Try IPv6 first followed by IPv4.
             String[][] procNetUdp6 = null;
             try {
@@ -203,6 +200,15 @@ public class TcpUdpClientInfo {
         return null;
     }
 
+    public static String getPackageNameForUid(int uid) {
+        AppInfo appInfo = AppProxyManager.Instance.getAppInfoByUid(uid);
+        if (appInfo != null) {
+            return appInfo.getPkgName();
+        }
+        return null;
+    }
+
+    // it will take a long time???
     public static PackageInfo getPackageInfoForUid(Context context, int uid) {
         PackageManager packageManager = context.getPackageManager();
         String[] packageNames = packageManager.getPackagesForUid(uid);
@@ -233,8 +239,8 @@ public class TcpUdpClientInfo {
             }
             String srcAddressAndPortText = fields[2];
             String dstAddressAndPortText = fields[3];
-            String[] srcAddressAndPort = srcAddressAndPortText.split(":");
-            String[] dstAddressAndPort = dstAddressAndPortText.split(":");
+            String[] srcAddressAndPort = Splitter.on(':').splitToList(srcAddressAndPortText).toArray(new String[0]);
+            String[] dstAddressAndPort = Splitter.on(':').splitToList(dstAddressAndPortText).toArray(new String[0]);
 
             // Match on ports first as it avoid parsing IP addresses if a port-based match fails
             if (sourcePort >= 0) {
@@ -266,9 +272,7 @@ public class TcpUdpClientInfo {
                 }
             }
 
-            String uidText = fields[8];
-            int uid = Integer.parseInt(uidText);
-            return uid;
+            return Integer.parseInt(fields[8]);
         }
 
         return null;
@@ -322,8 +326,8 @@ public class TcpUdpClientInfo {
     }
 
     /**
-     * Reads the contents of the {@code /proc/net/tcp} (or /proc/net/tcp6 /proc/net/udp /proc/net/udp6) and returns its lines (excluding
-     * the header).
+     * 耗时操作
+     * Reads the contents of the {@code /proc/net/tcp} (or /proc/net/tcp6 /proc/net/udp /proc/net/udp6) and returns its lines (excluding the header).
      */
     private static String[][] readProcNet(File file) throws IOException {
         /*
@@ -353,7 +357,16 @@ public class TcpUdpClientInfo {
             }
             String[][] result = new String[lines.size()][];
             for (int i = 0; i < result.length; i++) {
-                result[i] = lines.get(i).split("\\s+");
+                String[] tmp = new String[10];
+                int j = 0;
+                for (String s : Splitter.on(' ').split(lines.get(i))) {
+                    if (j >= 10) {
+                        break;
+                    }
+                    tmp[j] = s;
+                    j++;
+                }
+                result[i] = tmp;
             }
             return result;
         } finally {

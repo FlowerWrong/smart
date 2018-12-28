@@ -154,6 +154,7 @@ public class AppManager extends Activity {
         appInfo.setPkgName(pkgName);
         appInfo.setAppIcon(icon);
         appInfo.setSys(isSystemPackage(pi));
+        appInfo.setUid(ai.uid);
         if (!appInfo.getPkgName().equals("flowerwrong.github.com.smart")) // App本身会强制加入代理列表
             AppProxyManager.Instance.mlistAppInfo.add(appInfo);
     }

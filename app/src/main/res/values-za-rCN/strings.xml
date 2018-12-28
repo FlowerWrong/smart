@@ -5,6 +5,7 @@
     <string name="menu_item_toggle_global">开/关全局模式</string>
     <string name="menu_item_toggle_debug">开/关debug模式</string>
     <string name="menu_item_clear_log">清除日志</string>
+    <string name="menu_item_toggle_app">开/关app过滤</string>
     <string name="menu_item_update_config">更新配置文件</string>
     <string name="menu_item_about">关于</string>
     <string name="menu_item_exit">退出</string>

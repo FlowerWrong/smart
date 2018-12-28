@@ -1,9 +1,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/menu_item_switch"
+        android:actionViewClass="android.widget.Switch"
         android:showAsAction="always"
-        android:title="@string/menu_item_switch"
-        android:actionViewClass="android.widget.Switch"></item>
+        android:title="@string/menu_item_switch"></item>
 
     <item
         android:id="@+id/menu_item_toggle_global"
@@ -16,6 +16,10 @@
     <item
         android:id="@+id/menu_item_clear_log"
         android:title="@string/menu_item_clear_log"></item>
+
+    <item
+        android:id="@+id/menu_item_toggle_app"
+        android:title="@string/menu_item_toggle_app"></item>
 
     <item
         android:id="@+id/menu_item_update_config"

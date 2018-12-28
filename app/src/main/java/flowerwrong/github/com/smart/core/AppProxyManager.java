@@ -28,6 +28,15 @@ public class AppProxyManager {
         readProxyAppsList();
     }
 
+    public AppInfo getAppInfoByUid(int uid) {
+        for (AppInfo app : mlistAppInfo) {
+            if (app.getUid() == uid) {
+                return app;
+            }
+        }
+        return null;
+    }
+
     public void removeProxyApp(String pkg) {
         for (AppInfo app : this.proxyAppInfo) {
             if (app.getPkgName().equals(pkg)) {

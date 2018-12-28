@@ -7,6 +7,7 @@ public class AppInfo {
     private String appLabel;
     private String pkgName;
     private boolean sys;
+    private int uid;
 
     public AppInfo() {
     }
@@ -41,5 +42,13 @@ public class AppInfo {
 
     public void setSys(boolean sys) {
         this.sys = sys;
+    }
+
+    public int getUid() {
+        return uid;
+    }
+
+    public void setUid(int uid) {
+        this.uid = uid;
     }
 }

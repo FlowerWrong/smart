@@ -1,7 +1,8 @@
 package flowerwrong.github.com.smart.core;
 
 import android.annotation.SuppressLint;
-import android.os.Build;
+
+import com.google.common.base.Splitter;
 
 import flowerwrong.github.com.smart.tcpip.CommonMethods;
 import flowerwrong.github.com.smart.tunnel.Config;
@@ -10,14 +11,8 @@ import flowerwrong.github.com.smart.tunnel.httpconnect.HttpConnectConfig;
 import flowerwrong.github.com.smart.tunnel.shadowsocks.ShadowsocksConfig;
 import flowerwrong.github.com.smart.util.SubnetUtil;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.util.InetAddressUtils;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
 
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -52,6 +47,7 @@ public class ProxyConfig {
     HashMap<String, String> m_ProcessMap; // process
 
     public boolean globalMode = false;
+    public boolean appMode = false;
 
     int m_dns_ttl;
     String m_welcome_info;
@@ -73,7 +69,7 @@ public class ProxyConfig {
         }
 
         public IPAddress(String ipAddresString) {
-            String[] arrStrings = ipAddresString.split("/");
+            String[] arrStrings = Splitter.on('/').splitToList(ipAddresString).toArray(new String[0]);
             String address = arrStrings[0];
             int prefixLength = 32;
             if (arrStrings.length > 1) {
@@ -291,64 +287,11 @@ public class ProxyConfig {
         return m_isolate_http_host_header;
     }
 
-    private String[] downloadConfig(String url) throws Exception {
-        try {
-            HttpClient client = new DefaultHttpClient();
-            HttpGet requestGet = new HttpGet(url);
-
-            requestGet.addHeader("X-Android-MODEL", Build.MODEL);
-            requestGet.addHeader("X-Android-SDK_INT", Integer.toString(Build.VERSION.SDK_INT));
-            requestGet.addHeader("X-Android-RELEASE", Build.VERSION.RELEASE);
-            requestGet.addHeader("X-App-Version", AppVersion);
-            requestGet.addHeader("X-App-Install-ID", AppInstallID);
-            requestGet.setHeader("User-Agent", System.getProperty("http.agent"));
-            HttpResponse response = client.execute(requestGet);
-
-            String configString = EntityUtils.toString(response.getEntity(), "UTF-8");
-            String[] lines = configString.split("\\n");
-            return lines;
-        } catch (Exception e) {
-            throw new Exception(String.format("Download config file from %s failed.", url));
-        }
-    }
-
-    private String[] readConfigFromFile(String path) throws Exception {
-        StringBuilder sBuilder = new StringBuilder();
-        FileInputStream inputStream = null;
-        try {
-            byte[] buffer = new byte[8192];
-            int count = 0;
-            inputStream = new FileInputStream(path);
-            while ((count = inputStream.read(buffer)) > 0) {
-                sBuilder.append(new String(buffer, 0, count, "UTF-8"));
-            }
-            return sBuilder.toString().split("\\n");
-        } catch (Exception e) {
-            throw new Exception(String.format("Can't read config file: %s", path));
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (Exception e2) {
-                }
-            }
-        }
-    }
-
     public int loadFromFile(InputStream inputStream) throws Exception {
         byte[] bytes = new byte[inputStream.available()];
         inputStream.read(bytes);
-        return loadFromLines(new String(bytes).split("\\r?\\n"));
-    }
-
-    public void loadFromUrl(String url) throws Exception {
-        String[] lines = null;
-        if (url.charAt(0) == '/') {
-            lines = readConfigFromFile(url);
-        } else {
-            lines = downloadConfig(url);
-        }
-        loadFromLines(lines);
+        String[] lines = Splitter.onPattern("\r?\n").splitToList(new String(bytes)).toArray(new String[0]);
+        return loadFromLines(lines);
     }
 
     public int loadFromLines(String[] lines) throws Exception {
