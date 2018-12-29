@@ -18,8 +18,8 @@
         android:title="@string/menu_item_clear_log"></item>
 
     <item
-        android:id="@+id/menu_item_toggle_app"
-        android:title="@string/menu_item_toggle_app"></item>
+        android:id="@+id/menu_item_toggle_firewall"
+        android:title="@string/menu_item_toggle_firewall"></item>
 
     <item
         android:id="@+id/menu_item_update_config"

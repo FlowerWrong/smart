@@ -28,7 +28,6 @@ import java.util.regex.Pattern;
 
 public class ProxyConfig {
     public static final ProxyConfig Instance = new ProxyConfig();
-    public static boolean IS_DEBUG = false;
     public static String AppInstallID;
     public static String AppVersion;
     public final static int FAKE_NETWORK_MASK = CommonMethods.ipStringToInt("255.255.0.0");
@@ -46,8 +45,9 @@ public class ProxyConfig {
     HashMap<String, String> m_IPCidrMap; // ip cidr
     HashMap<String, String> m_ProcessMap; // process
 
+    public static boolean IS_DEBUG = false;
     public boolean globalMode = false;
-    public boolean appMode = false;
+    public boolean firewallMode = true;
 
     int m_dns_ttl;
     String m_welcome_info;
@@ -341,6 +341,10 @@ public class ProxyConfig {
                         m_session_name = items[1];
                     } else if (tagString.equals("debug")) {
                         ProxyConfig.IS_DEBUG = convertToBool(items[1]);
+                    } else if (tagString.equals("global_mode")) {
+                        ProxyConfig.Instance.globalMode = convertToBool(items[1]);
+                    } else if (tagString.equals("firewall_mode")) {
+                        ProxyConfig.Instance.firewallMode = convertToBool(items[1]);
                     } else if (tagString.equals("proxy_domain")) {
                         addDomainToHashMap(items, 1, "proxy");
                     } else if (tagString.equals("direct_domain")) {

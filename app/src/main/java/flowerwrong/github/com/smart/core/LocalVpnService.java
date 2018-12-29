@@ -36,12 +36,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -187,7 +185,7 @@ public class LocalVpnService extends VpnService implements Runnable {
                 String rules = IOUtils.toString(fis, Charset.defaultCharset());
                 String[] lines = Splitter.onPattern("\r?\n").splitToList(rules).toArray(new String[0]);
                 int ruleCount = ProxyConfig.Instance.loadFromLines(lines);
-                writeLog("Load config from file done " + ruleCount);
+                writeLog("Load config from file done, " + ruleCount + " rules");
             } catch (Exception e) {
                 String errString = e.getMessage();
                 if (errString == null || errString.isEmpty()) {
@@ -239,7 +237,7 @@ public class LocalVpnService extends VpnService implements Runnable {
                         writeLog("%s", ProxyConfig.Instance.getWelcomeInfo());
                     }
                     writeLog("Global mode is " + (ProxyConfig.Instance.globalMode ? "on" : "off"));
-                    writeLog("App filter mode is " + (ProxyConfig.Instance.appMode ? "on" : "off"));
+                    writeLog("Firewall mode is " + (ProxyConfig.Instance.firewallMode ? "on" : "off"));
 
                     runVPN();
                 } else {
@@ -292,7 +290,7 @@ public class LocalVpnService extends VpnService implements Runnable {
                 /**
                  * 以下代码易导致性能问题
                  */
-                if (ProxyConfig.Instance.appMode) {
+                if (ProxyConfig.Instance.firewallMode) {
                     try {
                         int uid = TcpUdpClientInfo.getUidForConnectionFromJni(
                                 ipHeader.getVersion(), IPHeader.TCP,
@@ -424,7 +422,7 @@ public class LocalVpnService extends VpnService implements Runnable {
             builder.addRoute(CommonMethods.ipIntToString(ProxyConfig.FAKE_NETWORK_IP), 16);
 
             if (ProxyConfig.IS_DEBUG)
-                LocalVpnService.Instance.writeLog("addRoute for FAKE_NETWORK: %s/%d", CommonMethods.ipIntToString(ProxyConfig.FAKE_NETWORK_IP), 16);
+                LocalVpnService.Instance.writeLog("addRoute for fake network: %s/%d", CommonMethods.ipIntToString(ProxyConfig.FAKE_NETWORK_IP), 16);
         } else {
             // 所有的IP包都路由到虚拟端口上去
             builder.addRoute("0.0.0.0", 0);
@@ -432,50 +430,28 @@ public class LocalVpnService extends VpnService implements Runnable {
                 LocalVpnService.Instance.writeLog("addDefaultRoute: 0.0.0.0/0");
         }
 
-        // route dns server to tun
-        Class<?> SystemProperties = Class.forName("android.os.SystemProperties");
-        Method method = SystemProperties.getMethod("get", new Class[]{String.class});
-        ArrayList<String> servers = new ArrayList<String>();
-        for (String name : new String[]{"net.dns1", "net.dns2", "net.dns3", "net.dns4",}) {
-            String value = (String) method.invoke(null, name);
-            if (value != null && !"".equals(value) && !servers.contains(value)) {
-                if (ProxyConfig.IS_DEBUG)
-                    LocalVpnService.Instance.writeLog("System dns server: " + value);
-                servers.add(value);
-                if (value.replaceAll("\\d", "").length() == 3) { // 防止IPv6地址导致问题
-                    builder.addRoute(value, 32);
-                    if (ProxyConfig.IS_DEBUG)
-                        LocalVpnService.Instance.writeLog("addRoute: %s/%d", value, 32);
-                } else {
-                    builder.addRoute(value, 128);
-                    if (ProxyConfig.IS_DEBUG)
-                        LocalVpnService.Instance.writeLog("addRoute: %s/%d", value, 128);
-                }
-            }
-        }
-
         if (AppProxyManager.isLollipopOrAbove) {
             if (AppProxyManager.Instance.proxyAppInfo.size() == 0) {
-                writeLog("Proxy All Apps");
+                writeLog("Proxy all app");
             } else {
                 for (AppInfo app : AppProxyManager.Instance.proxyAppInfo) {
                     builder.addAllowedApplication("flowerwrong.github.com.smart"); // 需要把自己加入代理，不然会无法进行网络连接
                     try {
                         builder.addAllowedApplication(app.getPkgName());
-                        writeLog("Proxy App: " + app.getAppLabel());
+                        writeLog("Proxy app: " + app.getAppLabel());
                     } catch (Exception e) {
                         e.printStackTrace();
-                        writeLog("Proxy App Fail: " + app.getAppLabel());
+                        writeLog("Proxy app fail: " + app.getAppLabel());
                     }
                 }
 
                 for (String pkg : ProxyConfig.Instance.getProcessListByAction("block")) {
                     try {
                         builder.addAllowedApplication(pkg);
-                        writeLog("Proxy App from block process: " + pkg);
+                        writeLog("Proxy app from block process: " + pkg);
                     } catch (Exception e) {
                         e.printStackTrace();
-                        writeLog("Proxy App from block process Fail: " + pkg);
+                        writeLog("Proxy app from block process Fail: " + pkg);
                     }
                 }
             }
