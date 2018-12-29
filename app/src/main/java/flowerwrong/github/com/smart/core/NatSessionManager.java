@@ -47,6 +47,10 @@ public class NatSessionManager {
         }
 
         if (session.RemoteHost == null) {
+            session.RemoteHost = DnsProxy.NoneProxyIPDomainMaps.get(remoteIP);
+        }
+
+        if (session.RemoteHost == null) {
             session.RemoteHost = CommonMethods.ipIntToString(remoteIP);
         }
         Sessions.put(portKey, session);
