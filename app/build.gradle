@@ -45,7 +45,7 @@ dependencies {
     implementation 'org.bouncycastle:bcprov-jdk15on:1.60'
 
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
-    implementation 'io.netty:netty-all:4.1.32.Final'
+    // implementation 'io.netty:netty-all:4.1.32.Final'
 
     implementation 'com.journeyapps:zxing-android-embedded:3.6.0'
     implementation 'com.google.zxing:core:3.3.3'

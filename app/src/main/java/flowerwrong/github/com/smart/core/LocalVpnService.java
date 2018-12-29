@@ -268,7 +268,7 @@ public class LocalVpnService extends VpnService implements Runnable {
                 }
                 onIPPacketReceived(m_IPHeader, size);
             }
-            Thread.sleep(20);
+            writeLog("[VPN] read " + size);
         }
         in.close();
         disconnectVPN();
@@ -464,7 +464,10 @@ public class LocalVpnService extends VpnService implements Runnable {
         builder.setConfigureIntent(pendingIntent);
 
         builder.setSession(ProxyConfig.Instance.getSessionName());
+
         // https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/net/VpnService.java#736
+        builder.setBlocking(true);
+
         ParcelFileDescriptor pfdDescriptor = builder.establish();
         onStatusChanged(getString(R.string.vpn_connected_status), true);
         return pfdDescriptor;
