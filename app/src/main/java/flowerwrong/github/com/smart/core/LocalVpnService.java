@@ -290,7 +290,7 @@ public class LocalVpnService extends VpnService implements Runnable {
                 tcpHeader.m_Offset = ipHeader.getHeaderLength();
 
                 /**
-                 * 一下代码易导致性能问题
+                 * 以下代码易导致性能问题
                  */
                 if (ProxyConfig.Instance.appMode) {
                     try {
@@ -428,9 +428,8 @@ public class LocalVpnService extends VpnService implements Runnable {
         } else {
             // 所有的IP包都路由到虚拟端口上去
             builder.addRoute("0.0.0.0", 0);
-            builder.addRoute("0:0:0:0:0:0:0:0", 0);
             if (ProxyConfig.IS_DEBUG)
-                LocalVpnService.Instance.writeLog("addDefaultRoute: 0.0.0.0/0 and 0:0:0:0:0:0:0:0/0");
+                LocalVpnService.Instance.writeLog("addDefaultRoute: 0.0.0.0/0");
         }
 
         // route dns server to tun
