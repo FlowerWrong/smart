@@ -53,7 +53,7 @@ public class LocalVpnService extends VpnService implements Runnable {
     public static boolean IsRunning = false;
     public static DatabaseReader maxmindReader;
     private int DEFAULT_IDLE_TIME = 1;
-    private int MAX_IDLE_TIME = 100;
+    private int MAX_IDLE_TIME = 20;
 
     public static Context context;
     public static PackageManager packageManager;
@@ -66,6 +66,7 @@ public class LocalVpnService extends VpnService implements Runnable {
 
     private Thread m_VPNThread;
     private ParcelFileDescriptor m_VPNInterface;
+    private boolean blockingMode = true;
     private TcpProxyServer m_TcpProxyServer;
     private DnsProxy m_DnsProxy;
     private FileOutputStream m_VPNOutputStream;
@@ -274,10 +275,12 @@ public class LocalVpnService extends VpnService implements Runnable {
                 }
                 onIPPacketReceived(m_IPHeader, size);
             }
-            if (idle < MAX_IDLE_TIME) {
-                idle += 1;
+            if (!blockingMode) {
+                if (idle < MAX_IDLE_TIME) {
+                    idle += 1;
+                }
+                Thread.sleep(idle);
             }
-            Thread.sleep(idle);
         }
         in.close();
         disconnectVPN();
@@ -476,7 +479,7 @@ public class LocalVpnService extends VpnService implements Runnable {
         builder.setSession(ProxyConfig.Instance.getSessionName());
 
         // https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/net/VpnService.java#736
-        builder.setBlocking(false);
+        builder.setBlocking(blockingMode);
 
         ParcelFileDescriptor pfdDescriptor = builder.establish();
         onStatusChanged(getString(R.string.vpn_connected_status), true);
@@ -484,7 +487,7 @@ public class LocalVpnService extends VpnService implements Runnable {
     }
 
     public void disconnectVPN() {
-        // wakeUpReadWorkaround();
+        wakeUpReadWorkaround();
         try {
             if (m_VPNInterface != null) {
                 m_VPNInterface.close();
