@@ -135,4 +135,19 @@ public class IPHeader {
         return String.format("%s->%s Pro=%s,HLen=%d", CommonMethods.ipIntToString(getSourceIP()), CommonMethods.ipIntToString(getDestinationIP()), getProtocol(), getHeaderLength());
     }
 
+    public static String protocol(int protocol) {
+        switch (protocol) {
+            case IPHeader.IP:
+                return "IP";
+            case IPHeader.ICMP:
+                return "ICMP";
+            case IPHeader.TCP:
+                return "TCP";
+            case IPHeader.UDP:
+                return "TCP";
+        }
+
+        return "unknown";
+    }
+
 }

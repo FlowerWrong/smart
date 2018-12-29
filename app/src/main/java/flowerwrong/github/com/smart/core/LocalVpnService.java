@@ -464,6 +464,7 @@ public class LocalVpnService extends VpnService implements Runnable {
         builder.setConfigureIntent(pendingIntent);
 
         builder.setSession(ProxyConfig.Instance.getSessionName());
+        // https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/net/VpnService.java#736
         ParcelFileDescriptor pfdDescriptor = builder.establish();
         onStatusChanged(getString(R.string.vpn_connected_status), true);
         return pfdDescriptor;

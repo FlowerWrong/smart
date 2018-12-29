@@ -1,5 +1,6 @@
 package flowerwrong.github.com.smart.core;
 
+import flowerwrong.github.com.smart.tcpip.IPHeader;
 import flowerwrong.github.com.smart.tunnel.Tunnel;
 
 import java.io.IOException;
@@ -96,7 +97,7 @@ public class TcpProxyServer implements Runnable {
         short portKey = (short) localChannel.socket().getPort();
         NatSession session = NatSessionManager.getSession(portKey);
         if (session != null) {
-            String action = ProxyConfig.Instance.needProxy(session.RemoteHost, session.RemoteIP);
+            String action = ProxyConfig.Instance.needProxy(session.RemoteHost, session.RemoteIP, IPHeader.TCP);
             if (action.equals("proxy")) {
                 return InetSocketAddress.createUnresolved(session.RemoteHost, session.RemotePort & 0xFFFF);
             } else if (action.equals("direct")) {

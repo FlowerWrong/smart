@@ -15,6 +15,7 @@ import java.nio.charset.Charset;
 import flowerwrong.github.com.smart.core.LocalVpnService;
 import flowerwrong.github.com.smart.core.ProxyConfig;
 import flowerwrong.github.com.smart.tcpip.CommonMethods;
+import flowerwrong.github.com.smart.tcpip.IPHeader;
 
 public class URLReqTest {
     @Test
@@ -32,10 +33,10 @@ public class URLReqTest {
 
             Assert.assertEquals(true, domain.endsWith("baidu.com"));
 
-            String action = ProxyConfig.Instance.needProxy(domain, 0);
+            String action = ProxyConfig.Instance.needProxy(domain, 0, IPHeader.TCP);
             Assert.assertEquals("direct", action);
 
-            action = ProxyConfig.Instance.needProxy(domain, CommonMethods.ipStringToInt(ip));
+            action = ProxyConfig.Instance.needProxy(domain, CommonMethods.ipStringToInt(ip), IPHeader.TCP);
             Assert.assertEquals("direct", action);
             in.close();
         } catch (MalformedURLException e) {
