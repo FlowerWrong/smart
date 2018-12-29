@@ -54,6 +54,7 @@ public class LocalVpnService extends VpnService implements Runnable {
     public static DatabaseReader maxmindReader;
 
     public static Context context;
+    public static PackageManager packageManager;
     public static String configFile = "smart-config.txt";
     public static String remoteConfigFile = "https://gist.githubusercontent.com/FlowerWrong/bccee4d63a6f0542523074f2ae184094/raw/smart-config.txt";
 
@@ -293,14 +294,13 @@ public class LocalVpnService extends VpnService implements Runnable {
                  */
                 if (ProxyConfig.Instance.appMode) {
                     try {
-                        byte[] sourceIp = CommonMethods.ipIntToInet4Address(ipHeader.getSourceIP()).getAddress();
-                        byte[] destinationIp = CommonMethods.ipIntToInet4Address(ipHeader.getDestinationIP()).getAddress();
-
-                        Integer uid = null;
-                        uid = TcpUdpClientInfo.getUidForConnection(true, sourceIp, tcpHeader.getSourcePort(), destinationIp, tcpHeader.getDestinationPort());
-
-                        if (uid != null) {
-                            String packageName = TcpUdpClientInfo.getPackageNameForUid(uid);
+                        int uid = TcpUdpClientInfo.getUidForConnectionFromJni(
+                                ipHeader.getVersion(), IPHeader.TCP,
+                                CommonMethods.ipIntToString(ipHeader.getSourceIP()), tcpHeader.getSourcePort(),
+                                CommonMethods.ipIntToString(ipHeader.getDestinationIP()), tcpHeader.getDestinationPort()
+                        );
+                        if (uid > 0) {
+                            String packageName = TcpUdpClientInfo.getPackageNameForUid(LocalVpnService.packageManager, uid);
                             if (packageName != null && ProxyConfig.Instance.getProcessListByAction("block").contains(packageName)) {
                                 return;
                             }

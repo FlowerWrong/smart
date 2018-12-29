@@ -99,6 +99,7 @@ public class MainActivity extends Activity implements
 
         LocalVpnService.addOnStatusChangedListener(this);
         LocalVpnService.context = this;
+        LocalVpnService.packageManager = this.getPackageManager();
 
         handler = new Handler(Looper.getMainLooper()) {
             @Override

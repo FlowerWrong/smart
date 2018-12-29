@@ -1,11 +1,11 @@
 package flowerwrong.github.com.smart.net;
 
-import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
 
-import com.google.common.base.Splitter;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 import java.io.BufferedReader;
 import java.io.EOFException;
@@ -17,22 +17,53 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import flowerwrong.github.com.smart.core.AppInfo;
-import flowerwrong.github.com.smart.core.AppProxyManager;
 import flowerwrong.github.com.smart.nogotofail.Closeables;
 import flowerwrong.github.com.smart.nogotofail.HexEncoding;
+import flowerwrong.github.com.smart.tcpip.IPHeader;
 
 public class TcpUdpClientInfo {
     private static final String TAG = TcpUdpClientInfo.class.getSimpleName();
 
-    public static String tcpLocation = "/proc/net/tcp";
-    public static String udpLocation = "/proc/net/udp";
-    public static String tcp6Location = "/proc/net/tcp6";
-    public static String udp6Location = "/proc/net/udp6";
+    private static Cache<String, Integer> uidCache = CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(30, TimeUnit.SECONDS)
+            .build();
+    private static Cache<Integer, String> uidForPackageCache = CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(30, TimeUnit.MINUTES)
+            .build();
 
-    public static Integer getUidForConnection(boolean isTcp,
-                                              byte[] sourceIp, int sourcePort, byte[] destinationIp, int destinationPort) {
+    static {
+        System.loadLibrary("proc");
+    }
+
+    public static native int jniGetUid(int version, int protocol,
+                                       String saddr, int sport,
+                                       String daddr, int dport);
+
+    private static String tcpLocation = "/proc/net/tcp";
+    private static String udpLocation = "/proc/net/udp";
+    private static String tcp6Location = "/proc/net/tcp6";
+    private static String udp6Location = "/proc/net/udp6";
+
+    public static int getUidForConnectionFromJni(int version, int protocol, String sourceIp, int sourcePort, String destinationIp, int destinationPort) {
+        String key = sourceIp + ":" + sourcePort + " <-> " + destinationIp + ":" + destinationPort;
+        Integer uid = uidCache.getIfPresent(key);
+        if (uid != null) {
+            return uid;
+        }
+        uid = jniGetUid(version, protocol, sourceIp, sourcePort, destinationIp, destinationPort);
+        if (uid > 0) {
+            uidCache.put(key, uid);
+        }
+        return uid;
+    }
+
+    public static Integer getUidForConnection(int version, int protocol,
+                                              byte[] sourceIp, int sourcePort,
+                                              byte[] destinationIp, int destinationPort) {
         // Convert the IP address to the format used by /proc/net/tcp and /proc/net/tcp6
         if (sourceIp != null) {
             try {
@@ -51,7 +82,7 @@ public class TcpUdpClientInfo {
             }
         }
 
-        if (isTcp) {
+        if (protocol == IPHeader.TCP) {
             // Try IPv6 first followed by IPv4.
             String[][] procNetTcp6 = null;
             try {
@@ -120,7 +151,7 @@ public class TcpUdpClientInfo {
                     }
                 }
             }
-        } else {
+        } else if (protocol == IPHeader.UDP) {
             // udp support
             // Try IPv6 first followed by IPv4.
             String[][] procNetUdp6 = null;
@@ -200,17 +231,12 @@ public class TcpUdpClientInfo {
         return null;
     }
 
-    public static String getPackageNameForUid(int uid) {
-        AppInfo appInfo = AppProxyManager.Instance.getAppInfoByUid(uid);
-        if (appInfo != null) {
-            return appInfo.getPkgName();
+    public static String getPackageNameForUid(PackageManager packageManager, int uid) {
+        String pkgName = uidForPackageCache.getIfPresent(uid);
+        if (pkgName != null) {
+            return pkgName;
         }
-        return null;
-    }
 
-    // it will take a long time???
-    public static PackageInfo getPackageInfoForUid(Context context, int uid) {
-        PackageManager packageManager = context.getPackageManager();
         String[] packageNames = packageManager.getPackagesForUid(uid);
         if ((packageNames == null) || (packageNames.length == 0)) {
             return null;
@@ -223,8 +249,11 @@ public class TcpUdpClientInfo {
             } catch (PackageManager.NameNotFoundException e) {
                 e.printStackTrace();
             }
-            if (packageInfo != null)
-                return packageInfo;
+            if (packageInfo != null) {
+                pkgName = packageInfo.packageName;
+                uidForPackageCache.put(uid, pkgName);
+                return pkgName;
+            }
         }
         return null;
     }
@@ -239,8 +268,8 @@ public class TcpUdpClientInfo {
             }
             String srcAddressAndPortText = fields[2];
             String dstAddressAndPortText = fields[3];
-            String[] srcAddressAndPort = Splitter.on(':').splitToList(srcAddressAndPortText).toArray(new String[0]);
-            String[] dstAddressAndPort = Splitter.on(':').splitToList(dstAddressAndPortText).toArray(new String[0]);
+            String[] srcAddressAndPort = srcAddressAndPortText.split(":");
+            String[] dstAddressAndPort = dstAddressAndPortText.split(":");
 
             // Match on ports first as it avoid parsing IP addresses if a port-based match fails
             if (sourcePort >= 0) {
@@ -338,6 +367,9 @@ public class TcpUdpClientInfo {
          * 1: 00000000:15B3 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0   ...
          * 2: 0F02000A:15B3 0202000A:CE8A 01 00000000:00000000 00:00000000 00000000     0   ...
          *
+         * 4 "%*d: %8s:%X %8s:%X %*X %*lX:%*lX %*X:%*X %*X %d %*d %*ld"
+         * 6 "%*d: %32s:%X %32s:%X %*X %*lX:%*lX %*X:%*X %*X %d %*d %*ld"
+         *
          */
         BufferedReader in = null;
         try {
@@ -357,16 +389,7 @@ public class TcpUdpClientInfo {
             }
             String[][] result = new String[lines.size()][];
             for (int i = 0; i < result.length; i++) {
-                String[] tmp = new String[10];
-                int j = 0;
-                for (String s : Splitter.on(' ').split(lines.get(i))) {
-                    if (j >= 10) {
-                        break;
-                    }
-                    tmp[j] = s;
-                    j++;
-                }
-                result[i] = tmp;
+                result[i] = lines.get(i).split("\\s+"); // it it very slow
             }
             return result;
         } finally {

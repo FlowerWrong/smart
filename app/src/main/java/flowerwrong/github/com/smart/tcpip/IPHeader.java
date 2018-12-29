@@ -36,6 +36,16 @@ public class IPHeader {
         setTTL((byte) 64);
     }
 
+    /**
+     * get ip version.
+     *
+     * @return 4 for IPv4,and 6 for IPv6.
+     */
+    public final byte getVersion() {
+        byte ver_and_ihl = m_Data[offset_ver_ihl];
+        return (byte) ((ver_and_ihl >> 4) & 0xf);
+    }
+
     public int getDataLength() {
         return this.getTotalLength() - this.getHeaderLength();
     }
