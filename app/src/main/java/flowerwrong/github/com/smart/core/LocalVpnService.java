@@ -36,6 +36,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
@@ -50,6 +52,8 @@ public class LocalVpnService extends VpnService implements Runnable {
     public static String ProxyUrl;
     public static boolean IsRunning = false;
     public static DatabaseReader maxmindReader;
+    private int DEFAULT_IDLE_TIME = 1;
+    private int MAX_IDLE_TIME = 100;
 
     public static Context context;
     public static PackageManager packageManager;
@@ -260,15 +264,20 @@ public class LocalVpnService extends VpnService implements Runnable {
         this.m_VPNOutputStream = new FileOutputStream(m_VPNInterface.getFileDescriptor());
         FileInputStream in = new FileInputStream(m_VPNInterface.getFileDescriptor());
         int size = 0;
+        int idle = DEFAULT_IDLE_TIME;
         while (size != -1 && IsRunning) {
             while ((size = in.read(m_Packet)) > 0 && IsRunning) {
+                idle = DEFAULT_IDLE_TIME;
                 if (m_DnsProxy.Stopped || m_TcpProxyServer.Stopped) {
                     in.close();
                     throw new Exception("LocalServer stopped.");
                 }
                 onIPPacketReceived(m_IPHeader, size);
             }
-            writeLog("[VPN] read " + size);
+            if (idle < MAX_IDLE_TIME) {
+                idle += 1;
+            }
+            Thread.sleep(idle);
         }
         in.close();
         disconnectVPN();
@@ -466,7 +475,7 @@ public class LocalVpnService extends VpnService implements Runnable {
         builder.setSession(ProxyConfig.Instance.getSessionName());
 
         // https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/net/VpnService.java#736
-        builder.setBlocking(true);
+        builder.setBlocking(false);
 
         ParcelFileDescriptor pfdDescriptor = builder.establish();
         onStatusChanged(getString(R.string.vpn_connected_status), true);
@@ -474,6 +483,7 @@ public class LocalVpnService extends VpnService implements Runnable {
     }
 
     public void disconnectVPN() {
+        // wakeUpReadWorkaround();
         try {
             if (m_VPNInterface != null) {
                 m_VPNInterface.close();
@@ -511,7 +521,10 @@ public class LocalVpnService extends VpnService implements Runnable {
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         LocalVpnService.Instance.writeLog("VPNService(%s) destoried", ID);
+        disconnectVPN();
+        IsRunning = false;
         if (m_VPNThread != null) {
             m_VPNThread.interrupt();
         }
@@ -543,5 +556,35 @@ public class LocalVpnService extends VpnService implements Runnable {
         public void onStatusChanged(String status, Boolean isRunning);
 
         public void onLogReceived(String logString);
+    }
+
+    // https://github.com/Genymobile/gnirehtet/blob/master/app/src/main/java/com/genymobile/gnirehtet/Forwarder.java#L144-L168
+    private static final byte[] DUMMY_ADDRESS = {42, 42, 42, 42};
+    private static final int DUMMY_PORT = 4242;
+
+    /**
+     * Neither vpnInterface.close() nor vpnInputStream.close() wake up a blocking
+     * vpnInputStream.read().
+     * <p>
+     * Therefore, we need to make Android send a packet to the VPN interface (here by sending a UDP
+     * packet), so that any blocking read will be woken up.
+     * <p>
+     * Since the tunnel is closed at this point, it will never reach the network.
+     */
+    private void wakeUpReadWorkaround() {
+        // network actions may not be called from the main thread
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    DatagramSocket socket = new DatagramSocket();
+                    InetAddress dummyAddr = InetAddress.getByAddress(DUMMY_ADDRESS);
+                    DatagramPacket packet = new DatagramPacket(new byte[0], 0, dummyAddr, DUMMY_PORT);
+                    socket.send(packet);
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        }).start();
     }
 }
