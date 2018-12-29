@@ -154,7 +154,7 @@ public class DnsProxy implements Runnable {
                 int realIP = getFirstIP(dnsPacket);
 
                 // 此时needProxy域名和对应的ip解析都存在
-                String action = ProxyConfig.Instance.needProxy(question.Domain, realIP, IPHeader.UDP);
+                String action = ProxyConfig.Instance.needProxy(question.Domain, realIP, IPHeader.UDP, 0);
                 if (action.equals("proxy") || action.equals("block")) {
                     int fakeIP = 0; // block
                     if (action.equals("proxy"))
@@ -211,7 +211,7 @@ public class DnsProxy implements Runnable {
         // Requests the A record for the domain name
         if (question.Type == 1) {
             // 此时needProxy只有域名存在，如果cache里面有，那么都存在
-            String action = ProxyConfig.Instance.needProxy(question.Domain, getIPFromCache(question.Domain), IPHeader.UDP);
+            String action = ProxyConfig.Instance.needProxy(question.Domain, getIPFromCache(question.Domain), IPHeader.UDP, 0);
 
 //            if (ProxyConfig.IS_DEBUG)
 //                LocalVpnService.Instance.writeLog("[DNS] query: " + question.Domain + " to " + CommonMethods.ipIntToString(ipHeader.getDestinationIP()) + ":" + udpHeader.getDestinationPort() + " " + action);

@@ -7,4 +7,5 @@ public class NatSession {
     public int BytesSent;
     public int PacketSent;
     public long LastNanoTime;
+    public int uid;
 }

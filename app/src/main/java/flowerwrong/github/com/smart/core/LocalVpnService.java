@@ -296,12 +296,13 @@ public class LocalVpnService extends VpnService implements Runnable {
                 TCPHeader tcpHeader = m_TCPHeader;
                 tcpHeader.m_Offset = ipHeader.getHeaderLength();
 
+                int uid = 0;
                 /**
                  * 以下代码易导致性能问题
                  */
                 if (ProxyConfig.Instance.firewallMode) {
                     try {
-                        int uid = TcpUdpClientInfo.getUidForConnectionFromJni(
+                        uid = TcpUdpClientInfo.getUidForConnectionFromJni(
                                 ipHeader.getVersion(), IPHeader.TCP,
                                 CommonMethods.ipIntToString(ipHeader.getSourceIP()), tcpHeader.getSourcePort(),
                                 CommonMethods.ipIntToString(ipHeader.getDestinationIP()), tcpHeader.getDestinationPort()
@@ -336,7 +337,7 @@ public class LocalVpnService extends VpnService implements Runnable {
                         int portKey = tcpHeader.getSourcePort();
                         NatSession session = NatSessionManager.getSession(portKey);
                         if (session == null || session.RemoteIP != ipHeader.getDestinationIP() || session.RemotePort != tcpHeader.getDestinationPort()) {
-                            session = NatSessionManager.createSession(portKey, ipHeader.getDestinationIP(), tcpHeader.getDestinationPort());
+                            session = NatSessionManager.createSession(portKey, ipHeader.getDestinationIP(), tcpHeader.getDestinationPort(), uid);
                         }
 
                         session.LastNanoTime = System.nanoTime();

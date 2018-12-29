@@ -32,7 +32,7 @@ public class NatSessionManager {
         }
     }
 
-    public static NatSession createSession(int portKey, int remoteIP, short remotePort) {
+    public static NatSession createSession(int portKey, int remoteIP, short remotePort, int uid) {
         if (Sessions.size() > MAX_SESSION_COUNT) {
             clearExpiredSessions(); // 清理过期的会话。
         }
@@ -41,6 +41,7 @@ public class NatSessionManager {
         session.LastNanoTime = System.nanoTime();
         session.RemoteIP = remoteIP;
         session.RemotePort = remotePort;
+        session.uid = uid;
 
         if (ProxyConfig.isFakeIP(remoteIP)) {
             session.RemoteHost = DnsProxy.reverseLookup(remoteIP);

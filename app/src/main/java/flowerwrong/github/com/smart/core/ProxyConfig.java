@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 
 import com.google.common.base.Splitter;
 
+import flowerwrong.github.com.smart.net.TcpUdpClientInfo;
 import flowerwrong.github.com.smart.tcpip.CommonMethods;
 import flowerwrong.github.com.smart.tcpip.IPHeader;
 import flowerwrong.github.com.smart.tunnel.Config;
@@ -227,7 +228,7 @@ public class ProxyConfig {
         return null;
     }
 
-    public String needProxy(String host, int ip, int protocol) {
+    public String needProxy(String host, int ip, int protocol, int uid) {
         // 无视配置文件，都走代理
         if (globalMode)
             return "proxy";
@@ -261,7 +262,7 @@ public class ProxyConfig {
             for (String key : m_IPCidrMap.keySet()) {
                 if (SubnetUtil.inSubnet(key, ipStr)) {
                     if (ProxyConfig.IS_DEBUG)
-                        LocalVpnService.Instance.writeLog("[IPCIDR] " + (domain == null ? host : domain) + " -> " + ipStr + " in " + key + " -> " + m_IPCidrMap.get(key) + " protocol " + IPHeader.protocol(protocol));
+                        LocalVpnService.Instance.writeLog("[IPCIDR] " + (domain == null ? host : domain) + " -> " + ipStr + " in " + key + " -> " + m_IPCidrMap.get(key) + " protocol " + IPHeader.protocol(protocol) + ((firewallMode && uid > 0) ? (" pkg " + TcpUdpClientInfo.getPackageNameForUid(LocalVpnService.packageManager, uid)) : ""));
                     return m_IPCidrMap.get(key);
                 }
             }
@@ -272,7 +273,7 @@ public class ProxyConfig {
                 countryIsoCode = countryIsoCode.toLowerCase(); // 统一使用小写
                 if (m_IPCountryMap.get(countryIsoCode) != null) {
                     if (ProxyConfig.IS_DEBUG) {
-                        LocalVpnService.Instance.writeLog("[GEOIP] " + (domain == null ? host : domain) + " -> " + ipStr + " " + countryIsoCode + " -> " + m_IPCountryMap.get(countryIsoCode) + " protocol " + IPHeader.protocol(protocol));
+                        LocalVpnService.Instance.writeLog("[GEOIP] " + (domain == null ? host : domain) + " -> " + ipStr + " " + countryIsoCode + " -> " + m_IPCountryMap.get(countryIsoCode) + " protocol " + IPHeader.protocol(protocol) + ((firewallMode && uid > 0) ? (" pkg " + TcpUdpClientInfo.getPackageNameForUid(LocalVpnService.packageManager, uid)) : ""));
                     }
                     return m_IPCountryMap.get(countryIsoCode);
                 }

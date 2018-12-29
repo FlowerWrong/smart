@@ -33,10 +33,10 @@ public class URLReqTest {
 
             Assert.assertEquals(true, domain.endsWith("baidu.com"));
 
-            String action = ProxyConfig.Instance.needProxy(domain, 0, IPHeader.TCP);
+            String action = ProxyConfig.Instance.needProxy(domain, 0, IPHeader.TCP, 0);
             Assert.assertEquals("direct", action);
 
-            action = ProxyConfig.Instance.needProxy(domain, CommonMethods.ipStringToInt(ip), IPHeader.TCP);
+            action = ProxyConfig.Instance.needProxy(domain, CommonMethods.ipStringToInt(ip), IPHeader.TCP, 0);
             Assert.assertEquals("direct", action);
             in.close();
         } catch (MalformedURLException e) {
