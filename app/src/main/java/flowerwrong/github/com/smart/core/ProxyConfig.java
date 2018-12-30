@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,11 +36,13 @@ public class ProxyConfig {
     public final static int FAKE_NETWORK_MASK = CommonMethods.ipStringToInt("255.255.0.0");
     public final static int FAKE_NETWORK_IP = CommonMethods.ipStringToInt("172.25.0.0");
 
+    // config item
     ArrayList<IPAddress> m_IpList;
     ArrayList<IPAddress> m_DnsList;
     ArrayList<IPAddress> m_RouteList;
     public ArrayList<Config> m_ProxyList;
 
+    // rules
     HashMap<String, String> m_DomainMap; // 完全匹配
     HashMap<String, String> m_DomainKeywordMap; // 关键词匹配
     HashMap<String, String> m_DomainSuffixMap; // 前缀匹配
@@ -60,6 +63,9 @@ public class ProxyConfig {
     String m_final_action = "direct";
 
     Timer m_Timer;
+
+    // eg: domain:action or ip:action
+    private static ConcurrentHashMap<String, String> ruleActionCache;
 
     public class IPAddress {
         public final String Address;
@@ -111,6 +117,8 @@ public class ProxyConfig {
         m_IPCidrMap = new HashMap<String, String>();
 
         m_ProcessMap = new HashMap<String, String>();
+
+        ruleActionCache = new ConcurrentHashMap<>();
 
         m_Timer = new Timer();
         m_Timer.schedule(m_Task, 120000, 120000); // 每两分钟刷新一次。
@@ -245,9 +253,14 @@ public class ProxyConfig {
                 }
             }
 
-            String action = getDomainState(host);
-
+            String action = ruleActionCache.get(host);
             if (action != null) {
+                return action;
+            }
+
+            action = getDomainState(host);
+            if (action != null) {
+                ruleActionCache.put(host, action);
                 return action;
             }
         }
@@ -256,14 +269,23 @@ public class ProxyConfig {
             if (isFakeIP(ip)) {
                 return "proxy";
             }
-            String domain = DnsProxy.NoneProxyIPDomainMaps.get(ip);
 
+            String action = ruleActionCache.get(ipStr);
+            if (action != null) {
+                return action;
+            }
+
+            String domain = DnsProxy.NoneProxyIPDomainMaps.get(ip);
             // ip cidr
             for (String key : m_IPCidrMap.keySet()) {
                 if (SubnetUtil.inSubnet(key, ipStr)) {
-                    if (ProxyConfig.IS_DEBUG)
+                    if (ProxyConfig.IS_DEBUG) {
                         LocalVpnService.Instance.writeLog("[IPCIDR] " + (domain == null ? host : domain) + " -> " + ipStr + " in " + key + " -> " + m_IPCidrMap.get(key) + " protocol " + IPHeader.protocol(protocol) + ((firewallMode && uid > 0) ? (" pkg " + TcpUdpClientInfo.getPackageNameForUid(LocalVpnService.packageManager, uid)) : ""));
-                    return m_IPCidrMap.get(key);
+                    }
+
+                    action = m_IPCidrMap.get(key);
+                    ruleActionCache.put(ipStr, action);
+                    return action;
                 }
             }
 
@@ -275,7 +297,10 @@ public class ProxyConfig {
                     if (ProxyConfig.IS_DEBUG) {
                         LocalVpnService.Instance.writeLog("[GEOIP] " + (domain == null ? host : domain) + " -> " + ipStr + " " + countryIsoCode + " -> " + m_IPCountryMap.get(countryIsoCode) + " protocol " + IPHeader.protocol(protocol) + ((firewallMode && uid > 0) ? (" pkg " + TcpUdpClientInfo.getPackageNameForUid(LocalVpnService.packageManager, uid)) : ""));
                     }
-                    return m_IPCountryMap.get(countryIsoCode);
+
+                    action = m_IPCountryMap.get(countryIsoCode);
+                    ruleActionCache.put(ipStr, action);
+                    return action;
                 }
             }
         }
