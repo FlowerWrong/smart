@@ -1,4 +1,4 @@
-package flowerwrong.github.com.smart.tunnel.shadowsocks;
+package flowerwrong.github.com.smart.tunnel.shadowsocks.crypto;
 
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.StreamCipher;

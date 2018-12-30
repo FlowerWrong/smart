@@ -1,7 +1,7 @@
-package flowerwrong.github.com.smart.tunnel.shadowsocks;
+package flowerwrong.github.com.smart.tunnel.shadowsocks.crypto;
 
 import org.bouncycastle.crypto.StreamBlockCipher;
-import org.bouncycastle.crypto.engines.SEEDEngine;
+import org.bouncycastle.crypto.engines.BlowfishEngine;
 import org.bouncycastle.crypto.modes.CFBBlockCipher;
 
 import java.io.ByteArrayOutputStream;
@@ -12,18 +12,18 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-public class SeedCrypt extends CryptBase {
+public class BlowFishCrypt extends CryptBase {
 
-    public final static String CIPHER_SEED_CFB = "seed-cfb";
+    public final static String CIPHER_BLOWFISH_CFB = "bf-cfb";
 
     public static Map<String, String> getCiphers() {
         Map<String, String> ciphers = new HashMap<String, String>();
-        ciphers.put(CIPHER_SEED_CFB, SeedCrypt.class.getName());
+        ciphers.put(CIPHER_BLOWFISH_CFB, BlowFishCrypt.class.getName());
 
         return ciphers;
     }
 
-    public SeedCrypt(String name, String password) {
+    public BlowFishCrypt(String name, String password) {
         super(name, password);
     }
 
@@ -34,10 +34,10 @@ public class SeedCrypt extends CryptBase {
 
     @Override
     protected StreamBlockCipher getCipher(boolean isEncrypted) throws InvalidAlgorithmParameterException {
-        SEEDEngine engine = new SEEDEngine();
+        BlowfishEngine engine = new BlowfishEngine();
         StreamBlockCipher cipher;
 
-        if (_name.equals(CIPHER_SEED_CFB)) {
+        if (_name.equals(CIPHER_BLOWFISH_CFB)) {
             cipher = new CFBBlockCipher(engine, getIVLength() * 8);
         } else {
             throw new InvalidAlgorithmParameterException(_name);
@@ -48,7 +48,7 @@ public class SeedCrypt extends CryptBase {
 
     @Override
     public int getIVLength() {
-        return 16;
+        return 8;
     }
 
     @Override

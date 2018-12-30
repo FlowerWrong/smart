@@ -1,4 +1,4 @@
-package flowerwrong.github.com.smart.tunnel.shadowsocks;
+package flowerwrong.github.com.smart.tunnel.shadowsocks.crypto;
 
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.StreamCipher;
@@ -15,6 +15,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import javax.crypto.SecretKey;
+
+import flowerwrong.github.com.smart.tunnel.shadowsocks.ShadowSocksKey;
 
 public abstract class CryptBase implements ICrypt {
 

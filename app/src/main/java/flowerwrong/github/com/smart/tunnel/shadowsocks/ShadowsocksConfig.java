@@ -4,6 +4,7 @@ import android.net.Uri;
 import android.util.Base64;
 
 import flowerwrong.github.com.smart.tunnel.Config;
+import flowerwrong.github.com.smart.tunnel.shadowsocks.crypto.CryptFactory;
 
 import java.net.InetSocketAddress;
 
