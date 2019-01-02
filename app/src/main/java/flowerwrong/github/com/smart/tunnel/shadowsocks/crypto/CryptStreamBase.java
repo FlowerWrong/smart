@@ -9,7 +9,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
@@ -17,8 +16,12 @@ import java.util.logging.Logger;
 import javax.crypto.SecretKey;
 
 import flowerwrong.github.com.smart.tunnel.shadowsocks.ShadowSocksKey;
+import flowerwrong.github.com.smart.util.CryptUtil;
 
-public abstract class CryptBase implements ICrypt {
+/**
+ * https://github.com/blinksocks/blinksocks/blob/master/src/presets/ss-stream-cipher.js
+ */
+public abstract class CryptStreamBase implements ICrypt {
 
     protected abstract StreamCipher getCipher(boolean isEncrypted) throws InvalidAlgorithmParameterException;
 
@@ -47,9 +50,9 @@ public abstract class CryptBase implements ICrypt {
     protected final Lock decLock = new ReentrantLock();
     protected StreamCipher encCipher;
     protected StreamCipher decCipher;
-    private Logger logger = Logger.getLogger(CryptBase.class.getName());
+    private Logger logger = Logger.getLogger(CryptStreamBase.class.getName());
 
-    public CryptBase(String name, String password) {
+    public CryptStreamBase(String name, String password) {
         _name = name.toLowerCase();
         _ivLength = getIVLength();
         _keyLength = getKeyLength();
@@ -65,6 +68,8 @@ public abstract class CryptBase implements ICrypt {
         CipherParameters cipherParameters = null;
 
         if (isEncrypt) {
+            _encryptIV = new byte[_ivLength];
+            System.arraycopy(iv, 0, _encryptIV, 0, _ivLength);
             cipherParameters = getCipherParameters(iv);
             try {
                 encCipher = getCipher(isEncrypt);
@@ -103,8 +108,7 @@ public abstract class CryptBase implements ICrypt {
             stream.reset();
             if (!_encryptIVSet) {
                 _encryptIVSet = true;
-                byte[] iv = new byte[_ivLength];
-                new SecureRandom().nextBytes(iv);
+                byte[] iv = CryptUtil.randomBytes(_ivLength);
                 setIV(iv, true);
                 try {
                     stream.write(iv);

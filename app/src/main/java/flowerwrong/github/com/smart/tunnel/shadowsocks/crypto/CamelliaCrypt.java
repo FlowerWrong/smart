@@ -12,7 +12,7 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-public class CamelliaCrypt extends CryptBase {
+public class CamelliaCrypt extends CryptStreamBase {
 
     public final static String CIPHER_CAMELLIA_128_CFB = "camellia-128-cfb";
     public final static String CIPHER_CAMELLIA_192_CFB = "camellia-192-cfb";

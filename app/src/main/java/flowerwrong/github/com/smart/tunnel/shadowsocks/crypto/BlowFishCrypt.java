@@ -12,7 +12,7 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-public class BlowFishCrypt extends CryptBase {
+public class BlowFishCrypt extends CryptStreamBase {
 
     public final static String CIPHER_BLOWFISH_CFB = "bf-cfb";
 

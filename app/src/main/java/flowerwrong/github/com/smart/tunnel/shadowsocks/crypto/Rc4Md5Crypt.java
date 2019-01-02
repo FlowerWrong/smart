@@ -14,7 +14,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 
-public class Rc4Md5Crypt extends CryptBase {
+public class Rc4Md5Crypt extends CryptStreamBase {
     public static String CIPHER_RC4_MD5 = "rc4-md5";
 
     public static Map<String, String> getCiphers() {

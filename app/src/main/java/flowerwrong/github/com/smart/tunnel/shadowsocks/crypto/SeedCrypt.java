@@ -12,7 +12,7 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-public class SeedCrypt extends CryptBase {
+public class SeedCrypt extends CryptStreamBase {
 
     public final static String CIPHER_SEED_CFB = "seed-cfb";
 

@@ -43,6 +43,7 @@ dependencies {
     implementation 'com.google.guava:guava:27.0.1-android'
 
     implementation 'org.bouncycastle:bcprov-jdk15on:1.60'
+    // implementation 'com.google.crypto.tink:tink-android:1.2.1'
 
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
     // implementation 'io.netty:netty-all:4.1.32.Final'

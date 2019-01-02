@@ -13,7 +13,7 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-public class AesCrypt extends CryptBase {
+public class AesCrypt extends CryptStreamBase {
 
     public final static String CIPHER_AES_128_CFB = "aes-128-cfb";
     public final static String CIPHER_AES_192_CFB = "aes-192-cfb";

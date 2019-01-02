@@ -12,7 +12,7 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-public class Chacha20Crypt extends CryptBase {
+public class Chacha20Crypt extends CryptStreamBase {
     public final static String CIPHER_CHACHA20 = "chacha20";
     public final static String CIPHER_CHACHA20_IETF = "chacha20-ietf";
 

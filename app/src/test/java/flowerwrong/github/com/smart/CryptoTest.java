@@ -3,6 +3,7 @@ package flowerwrong.github.com.smart;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.security.GeneralSecurityException;
 import java.util.List;
 
 import flowerwrong.github.com.smart.tunnel.shadowsocks.crypto.CryptFactory;
@@ -25,7 +26,7 @@ import flowerwrong.github.com.smart.tunnel.shadowsocks.crypto.CryptFactory;
  */
 public class CryptoTest {
     @Test
-    public void testSupportedCiphers() {
+    public void testSupportedCiphers() throws GeneralSecurityException {
         List<String> scs = CryptFactory.getSupportedCiphers();
         System.out.println(scs);
         Assert.assertEquals(14, scs.size());

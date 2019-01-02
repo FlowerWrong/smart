@@ -19,7 +19,6 @@ public class ShadowSocksKey implements SecretKey {
     }
 
     public ShadowSocksKey(String password, int length) {
-        // TODO: Invalid key length
         _length = length;
         _key = init(password);
     }
