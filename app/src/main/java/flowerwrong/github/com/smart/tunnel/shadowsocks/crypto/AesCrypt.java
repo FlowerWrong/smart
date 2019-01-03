@@ -1,7 +1,7 @@
 package flowerwrong.github.com.smart.tunnel.shadowsocks.crypto;
 
 import org.bouncycastle.crypto.StreamBlockCipher;
-import org.bouncycastle.crypto.engines.AESFastEngine;
+import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.modes.CFBBlockCipher;
 import org.bouncycastle.crypto.modes.OFBBlockCipher;
 
@@ -53,7 +53,7 @@ public class AesCrypt extends CryptStreamBase {
 
     @Override
     protected StreamBlockCipher getCipher(boolean isEncrypted) throws InvalidAlgorithmParameterException {
-        AESFastEngine engine = new AESFastEngine();
+        AESEngine engine = new AESEngine();
         StreamBlockCipher cipher;
 
         if (_name.equals(CIPHER_AES_128_CFB)) {

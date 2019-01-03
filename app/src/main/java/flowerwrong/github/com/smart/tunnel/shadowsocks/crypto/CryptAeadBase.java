@@ -1,9 +1,13 @@
 package flowerwrong.github.com.smart.tunnel.shadowsocks.crypto;
 
+import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.modes.AEADBlockCipher;
+import org.bouncycastle.crypto.params.AEADParameters;
+import org.bouncycastle.crypto.params.KeyParameter;
 
 import java.io.ByteArrayOutputStream;
 import java.security.InvalidAlgorithmParameterException;
+import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -55,6 +59,20 @@ public abstract class CryptAeadBase implements ICrypt {
 
         encNonce = new byte[getNonceLength()];
         decNonce = new byte[getNonceLength()];
+    }
+
+    protected CipherParameters getCipherParameters(boolean forEncryption) {
+        byte[] nonce;
+        if (_protocol == IPHeader.UDP) {
+            nonce = forEncryption ? Arrays.copyOf(encNonce, getNonceLength()) : Arrays.copyOf(decNonce, getNonceLength());
+        } else {
+            nonce = new byte[getNonceLength()];
+        }
+        return new AEADParameters(
+                new KeyParameter(forEncryption ? encSubkey : decSubkey),
+                getTagLength() * 8,
+                nonce
+        );
     }
 
     @Override
