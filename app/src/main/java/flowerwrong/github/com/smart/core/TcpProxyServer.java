@@ -53,7 +53,7 @@ public class TcpProxyServer implements Runnable {
                 m_ServerSocketChannel.close();
                 m_ServerSocketChannel = null;
             } catch (Exception e) {
-                LocalVpnService.Instance.writeLog(e.getLocalizedMessage());
+                LocalVpnService.Instance.writeLog("close channel failed ", e.getLocalizedMessage());
                 e.printStackTrace();
             }
         }

@@ -145,6 +145,7 @@ public class LocalVpnService extends VpnService implements Runnable {
             CommonMethods.ComputeUDPChecksum(ipHeader, udpHeader);
             this.m_VPNOutputStream.write(ipHeader.m_Data, ipHeader.m_Offset, ipHeader.getTotalLength());
         } catch (IOException e) {
+            LocalVpnService.Instance.writeLog("sendUDPPacket failed ", e.getLocalizedMessage());
             e.printStackTrace();
         }
     }

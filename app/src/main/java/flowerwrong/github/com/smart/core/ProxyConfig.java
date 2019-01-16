@@ -280,7 +280,7 @@ public class ProxyConfig {
             for (String key : m_IPCidrMap.keySet()) {
                 if (SubnetUtil.inSubnet(key, ipStr)) {
                     if (ProxyConfig.IS_DEBUG) {
-                        LocalVpnService.Instance.writeLog("[IPCIDR] " + (domain == null ? host : domain) + " -> " + ipStr + " in " + key + " -> " + m_IPCidrMap.get(key) + " protocol " + IPHeader.protocol(protocol) + ((firewallMode && uid > 0) ? (" pkg " + TcpUdpClientInfo.getPackageNameForUid(LocalVpnService.packageManager, uid)) : ""));
+                        LocalVpnService.Instance.writeLog("[IPCIDR] " + (domain == null ? host : domain) + " -> " + ipStr + " in " + key + " via " + m_IPCidrMap.get(key) + " " + IPHeader.protocol(protocol) + ((firewallMode && uid > 0) ? (" " + TcpUdpClientInfo.getPackageNameForUid(LocalVpnService.packageManager, uid)) : ""));
                     }
 
                     action = m_IPCidrMap.get(key);
@@ -295,7 +295,7 @@ public class ProxyConfig {
                 countryIsoCode = countryIsoCode.toLowerCase(); // 统一使用小写
                 if (m_IPCountryMap.get(countryIsoCode) != null) {
                     if (ProxyConfig.IS_DEBUG) {
-                        LocalVpnService.Instance.writeLog("[GEOIP] " + (domain == null ? host : domain) + " -> " + ipStr + " " + countryIsoCode + " -> " + m_IPCountryMap.get(countryIsoCode) + " protocol " + IPHeader.protocol(protocol) + ((firewallMode && uid > 0) ? (" pkg " + TcpUdpClientInfo.getPackageNameForUid(LocalVpnService.packageManager, uid)) : ""));
+                        LocalVpnService.Instance.writeLog("[GEOIP] " + (domain == null ? host : domain) + " -> " + ipStr + " " + countryIsoCode + " via " + m_IPCountryMap.get(countryIsoCode) + " " + IPHeader.protocol(protocol) + ((firewallMode && uid > 0) ? (" " + TcpUdpClientInfo.getPackageNameForUid(LocalVpnService.packageManager, uid)) : ""));
                     }
 
                     action = m_IPCountryMap.get(countryIsoCode);

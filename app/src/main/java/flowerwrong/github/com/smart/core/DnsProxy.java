@@ -118,9 +118,6 @@ public class DnsProxy implements Runnable {
         dnsPacket.Header.setAResourceCount((short) 0);
         dnsPacket.Header.setEResourceCount((short) 0);
 
-        // https://github.com/oldman1977/SmartProxy/issues/18
-        // dnsPacket.Header.setFlags((short) 0x8180);
-
         ResourcePointer rPointer = new ResourcePointer(rawPacket, question.Offset() + question.Length());
         rPointer.setDomain((short) 0xC00C);
         rPointer.setType(question.Type);
@@ -213,9 +210,6 @@ public class DnsProxy implements Runnable {
             // 此时needProxy只有域名存在，如果cache里面有，那么都存在
             String action = ProxyConfig.Instance.needProxy(question.Domain, getIPFromCache(question.Domain), IPHeader.UDP, 0);
 
-//            if (ProxyConfig.IS_DEBUG)
-//                LocalVpnService.Instance.writeLog("[DNS] query: " + question.Domain + " to " + CommonMethods.ipIntToString(ipHeader.getDestinationIP()) + ":" + udpHeader.getDestinationPort() + " " + action);
-
             if (action.equals("proxy") || action.equals("block")) {
                 int fakeIP = 0; // block
                 if (action.equals("proxy"))
@@ -295,7 +289,7 @@ public class DnsProxy implements Runnable {
                     LocalVpnService.Instance.writeLog("VPN protect udp socket failed.");
                 }
             } catch (IOException e) {
-                LocalVpnService.Instance.writeLog(e.getLocalizedMessage());
+                LocalVpnService.Instance.writeLog("on DNS req send failed ", e.getLocalizedMessage());
                 e.printStackTrace();
             }
         }
